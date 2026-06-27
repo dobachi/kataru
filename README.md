@@ -68,4 +68,8 @@ make run             # = godot --path .   ※ Godotエディタで project.godot
 
 ## ライセンス
 
-[Apache License 2.0](LICENSE)
+- **コード**: [Apache License 2.0](LICENSE)
+- **素材（フォント・アート・音）**: それぞれのライセンスに従う（[CREDITS.md](CREDITS.md) に集約）
+  - 例: 日本語フォント DotGothic16（SIL OFL 1.1）
+
+詳細・出典は [CREDITS.md](CREDITS.md) を参照。

@@ -1,0 +1,7 @@
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://b0kataruui01"]
+
+[ext_resource type="FontFile" uid="uid://vk37xp0pv1yk" path="res://assets/fonts/DotGothic16-Regular.ttf" id="1_font"]
+
+[resource]
+default_font = ExtResource("1_font")
+default_font_size = 12
