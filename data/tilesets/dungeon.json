@@ -2,6 +2,7 @@
   "id": "dungeon",
   "image": "dungeon.png",
   "default": ".",
+  "warp_col": 2,
   "tiles": {
     ".": {
       "col": 0,

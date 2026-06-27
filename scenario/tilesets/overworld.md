@@ -2,6 +2,7 @@
 id: overworld
 image: overworld.png
 default: .
+warp_col: 5
 ---
 
 ## タイル

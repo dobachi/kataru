@@ -192,7 +192,11 @@ def to_map_dict(doc: MapDoc, tileset: dict) -> dict:
                     if conn:
                         warps.append({"pos": [x, y], "map": conn["map"], "to": [conn["x"], conn["y"]]})
             tdef = terrain.get(sym, {"col": 0, "solid": False})
-            trow.append(int(tdef.get("col", 0)))
+            col = int(tdef.get("col", 0))
+            # 移動口マスは入口タイル(warp_col)で描く（通行は可のまま）
+            if ch.isalpha() and ch.islower() and int(tileset.get("warp_col", -1)) >= 0:
+                col = int(tileset["warp_col"])
+            trow.append(col)
             srow.append(bool(tdef.get("solid", False)))
         tiles.append(trow)
         solid.append(srow)

@@ -124,6 +124,25 @@ def slime():
     return im
 
 
+def door():
+    im = grass()
+    _rect(im, 4, 3, 12, 14, (120, 114, 132, 255))   # 石枠
+    _rect(im, 4, 3, 12, 5, (150, 144, 160, 255))     # 上部ハイライト
+    _rect(im, 6, 6, 10, 14, (24, 20, 32, 255))       # 暗い入口
+    _outline(im)
+    return im
+
+
+def stairs():
+    im = cave_floor()
+    for i in range(4):
+        yy = 4 + i * 2
+        _rect(im, 3 + i, yy, 13 - i, yy + 2, (150, 144, 160, 255))
+        _rect(im, 3 + i, yy, 13 - i, yy + 1, (96, 90, 104, 255))
+    _outline(im)
+    return im
+
+
 def cave_floor():
     im = _img()
     _rect(im, 0, 0, T, T, (78, 72, 86, 255))
@@ -164,11 +183,11 @@ def _atlas(tiles, path_out):
 
 def main():
     _atlas(
-        [grass(), stone(), tree(), water(), path()],
+        [grass(), stone(), tree(), water(), path(), door()],
         os.path.join(ROOT, "assets/tiles/overworld.png"),
     )
     _atlas(
-        [cave_floor(), cave_wall()],
+        [cave_floor(), cave_wall(), stairs()],
         os.path.join(ROOT, "assets/tiles/dungeon.png"),
     )
     _atlas(

@@ -32,7 +32,15 @@ class TilesetDoc:
     id: str = ""
     image: str = ""
     default: str = "."
+    warp_col: int = -1                          # 移動口マスの描画列（-1なら床と同じ）
     tiles: dict = field(default_factory=dict)   # sym -> {"col": int, "solid": bool}
+
+
+def _to_int(v, default: int) -> int:
+    try:
+        return int(str(v).strip())
+    except ValueError:
+        return default
 
 
 def parse(text: str) -> TilesetDoc:
@@ -41,6 +49,7 @@ def parse(text: str) -> TilesetDoc:
         id=fm.get("id", ""),
         image=fm.get("image", ""),
         default=(fm.get("default", ".") or ".")[0],
+        warp_col=_to_int(fm.get("warp_col", "-1"), -1),
     )
     in_section = False
     for line in body.splitlines():
@@ -72,4 +81,7 @@ def lint(doc: TilesetDoc) -> list[LintIssue]:
 
 
 def to_tileset_dict(doc: TilesetDoc) -> dict:
-    return {"id": doc.id, "image": doc.image, "default": doc.default, "tiles": doc.tiles}
+    return {
+        "id": doc.id, "image": doc.image, "default": doc.default,
+        "warp_col": doc.warp_col, "tiles": doc.tiles,
+    }
