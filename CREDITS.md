@@ -15,7 +15,9 @@ kataru はライセンスを **層ごと** に分けて管理しています。
   - ライセンス全文: `assets/fonts/DotGothic16-OFL.txt`
 
 ### アート（タイル・キャラ・UI）
-- （未導入。CC0素材を優先予定。導入時にここへ出典・ライセンスを記載）
+- **自作の簡易ドット絵（CC0 相当 / 本プロジェクト作）** — `tools/genart.py` で生成
+  - `assets/tiles/overworld.png`、`assets/sprites/characters.png`
+  - 暫定プレースホルダ。将来 Kenney 等の外部CC0素材へ差し替え予定（差し替え時に出典を追記）
 
 ### 音（BGM・SE）
 - （未導入。CC0/CC-BY を予定。導入時にここへ記載）
