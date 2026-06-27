@@ -45,8 +45,20 @@
 ## 開発環境
 
 - [Godot 4](https://godotengine.org/)（GL Compatibility レンダラ前提）
+- Python 3（制作支援ツール用。`pip3 install -r tools/requirements.txt`）
 
-Godot で `project.godot` を開いて実行すると、現状はプレースホルダのタイトル画面が表示されます。
+## 動かす
+
+```bash
+# シナリオ(markdown) -> データ(JSON) へ変換
+make build           # = python3 tools/kataru.py convert --all
+
+# ゲームを起動（矢印キー/WASDで移動）
+make run             # = godot --path .   ※ Godotエディタで project.godot を開いて F5 でも可
+```
+
+マップを編集したら `make build` で `data/` を再生成してから起動します。
+制作支援ツールの詳細は [tools/README.md](tools/README.md) を参照。
 
 ## ロードマップ
 

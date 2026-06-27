@@ -1,27 +1,14 @@
 extends Node2D
-## S1: タイルマップ表示＋プレイヤーのグリッド移動＋カメラ追従。
-## マップは当面ここでASCIIから生成する（S2で data/*.json 読み込みへ置き換え）。
+## S2: マップを data/maps/*.json から読み込んで表示する（データ駆動）。
+## 元の scenario/maps/village.md を tools/kataru.py convert で JSON 化したもの。
 
 const TILE_SIZE := 16  # SNES級を想定した16pxタイル基準（S1は色塗りプレースホルダ）
-
-# 古風RPG風のデモマップ。'#'=壁 '.'=床 '@'=プレイヤー初期位置
-const DEMO_MAP := [
-	"####################",
-	"#..................#",
-	"#..####....####....#",
-	"#..#..........#....#",
-	"#.....@.......#....#",
-	"#..#..........#....#",
-	"#..####....####....#",
-	"#..................#",
-	"#....######........#",
-	"#..................#",
-	"#..................#",
-	"####################",
-]
+const MAP_PATH := "res://data/maps/village.json"
 
 func _ready() -> void:
-	var map := _build_map(DEMO_MAP)
+	var map := MapLoader.load_map(MAP_PATH)
+	if map == null:
+		return
 
 	var renderer := MapRenderer.new()
 	renderer.setup(map, TILE_SIZE)
@@ -40,20 +27,3 @@ func _ready() -> void:
 	cam.limit_bottom = map.height * TILE_SIZE
 	player.add_child(cam)
 	cam.make_current()
-
-## ASCII行配列から WorldMap を生成する（S1暫定。S2で正式な記法→変換へ）。
-func _build_map(ascii: Array) -> WorldMap:
-	var rows: Array = []
-	var start := Vector2i(1, 1)
-	for y in ascii.size():
-		var line: String = ascii[y]
-		var row: Array = []
-		for x in line.length():
-			var ch := line[x]
-			row.append(TileTypes.WALL if ch == "#" else TileTypes.FLOOR)
-			if ch == "@":
-				start = Vector2i(x, y)
-		rows.append(row)
-	var map := WorldMap.new(rows)
-	map.player_start = start
-	return map

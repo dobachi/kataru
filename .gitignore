@@ -15,3 +15,9 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# kataru: 制作支援ツールの出力物
+# build/ は preview PNG など一時生成物
+build/
+__pycache__/
+# data/ は scenario/ から生成されるが、ゲームが即動くよう現状はコミットする

@@ -3,10 +3,13 @@ extends RefCounted
 ## マップ1枚の論理データ。タイルは行優先で tiles[y][x] に整数で持つ。
 ## S1では Main 側で生成するが、S2以降は data/*.json から読み込んでここに載せる。
 
+var id: String = ""
+var map_name: String = ""
 var width: int = 0
 var height: int = 0
 var tiles: Array = []                 # Array[Array[int]]（行優先）
 var player_start := Vector2i(1, 1)
+var npcs: Array = []                  # [{ "id": String, "pos": [x, y] }]（S3で使用）
 
 func _init(rows: Array = []) -> void:
 	if not rows.is_empty():
