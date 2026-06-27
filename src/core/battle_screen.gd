@@ -21,6 +21,10 @@ var _edef := 0
 var _eexp := 0
 var _ename := ""
 
+const REVEAL_CPS := 40.0
+var _revealing := false
+var _reveal := 0.0
+
 var _menu_items := ["たたかう", "にげる"]
 var _sel := 0
 var _queue: Array = []           # 表示待ちメッセージ
@@ -62,6 +66,27 @@ func _ready() -> void:
 
 	visible = false
 
+func _process(delta: float) -> void:
+	if not active or not _revealing:
+		return
+	_reveal += delta * REVEAL_CPS
+	var total := _msg.get_total_character_count()
+	if int(_reveal) >= total:
+		_msg.visible_characters = -1
+		_revealing = false
+	else:
+		_msg.visible_characters = int(_reveal)
+
+func _set_msg(text: String) -> void:
+	_msg.text = text
+	_msg.visible_characters = 0
+	_reveal = 0.0
+	_revealing = true
+
+func _reveal_all_msg() -> void:
+	_msg.visible_characters = -1
+	_revealing = false
+
 func start(stats: Dictionary, enemy: Dictionary) -> void:
 	_php = int(stats.get("hp", 1))
 	_pmax = int(stats.get("max_hp", _php))
@@ -95,7 +120,10 @@ func _show_messages(msgs: Array, after: String) -> void:
 	_after = after
 	mode = "message"
 	_menu.text = ""
-	_msg.text = str(_queue[0]) if not _queue.is_empty() else ""
+	if _queue.is_empty():
+		_msg.text = ""
+	else:
+		_set_msg(str(_queue[0]))
 
 # --- 入力（Main から呼ばれる） ---
 
@@ -129,9 +157,12 @@ func _choose() -> void:
 		_show_messages(msgs, "enemy")
 
 func _advance_message() -> void:
+	if _revealing:
+		_reveal_all_msg()
+		return
 	_queue.pop_front()
 	if not _queue.is_empty():
-		_msg.text = str(_queue[0])
+		_set_msg(str(_queue[0]))
 		return
 	_resolve_after()
 
@@ -139,6 +170,8 @@ func _resolve_after() -> void:
 	match _after:
 		"command":
 			mode = "command"
+			_revealing = false
+			_msg.visible_characters = -1
 			_msg.text = "どうする？"
 			_render_menu()
 		"enemy":

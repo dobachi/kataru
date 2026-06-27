@@ -1,11 +1,13 @@
 class_name DialogueBox
 extends CanvasLayer
 ## 画面下部の会話ウィンドウ。
-## 会話: lines を順に表示 → choices があれば選択 → 選んだ応答(lines) を表示 → 終了。
+## 本文は1文字ずつ送る（タイプライタ）。表示途中に決定で全文表示、表示済みで決定すると次へ。
 ## モード: "lines"（本文送り） / "choices"（選択） / "response"（選択後の応答送り）
 
 signal finished
 signal choice_selected(choice: Dictionary)
+
+const REVEAL_CPS := 40.0          # 1秒あたりの表示文字数
 
 var active := false
 var mode := "lines"
@@ -15,6 +17,8 @@ var _choices: Array = []
 var _resp: Array = []
 var _index := 0
 var _sel := 0
+var _revealing := false
+var _reveal := 0.0
 var _name_label: Label
 var _body_label: Label
 
@@ -30,7 +34,6 @@ func _ready() -> void:
 
 	_name_label = Label.new()
 	_name_label.position = Vector2(10, 6)
-	_name_label.add_theme_font_size_override("font_size", 12)
 	_name_label.modulate = Color(1.0, 0.92, 0.6)
 	panel.add_child(_name_label)
 
@@ -41,10 +44,20 @@ func _ready() -> void:
 	_body_label.offset_right = -10
 	_body_label.offset_bottom = -8
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_body_label.add_theme_font_size_override("font_size", 12)
 	panel.add_child(_body_label)
 
 	visible = false
+
+func _process(delta: float) -> void:
+	if not active or not _revealing:
+		return
+	_reveal += delta * REVEAL_CPS
+	var total := _body_label.get_total_character_count()
+	if int(_reveal) >= total:
+		_body_label.visible_characters = -1
+		_revealing = false
+	else:
+		_body_label.visible_characters = int(_reveal)
 
 func start(speaker: String, lines: Array, choices: Array = []) -> void:
 	if lines.is_empty() and choices.is_empty():
@@ -61,22 +74,25 @@ func start(speaker: String, lines: Array, choices: Array = []) -> void:
 		_enter_choices_or_finish()
 	else:
 		mode = "lines"
-		_body_label.text = str(_lines[0])
+		_set_line(str(_lines[0]))
 
-## 本文/応答の送り（ui_accept）
+## 本文の送り（ui_accept）
 func advance() -> void:
 	if not active:
+		return
+	if _revealing:
+		_reveal_all()
 		return
 	if mode == "lines":
 		_index += 1
 		if _index < _lines.size():
-			_body_label.text = str(_lines[_index])
+			_set_line(str(_lines[_index]))
 		else:
 			_enter_choices_or_finish()
 	elif mode == "response":
 		_index += 1
 		if _index < _resp.size():
-			_body_label.text = str(_resp[_index])
+			_set_line(str(_resp[_index]))
 		else:
 			_finish()
 
@@ -99,7 +115,17 @@ func confirm() -> void:
 		_finish()
 	else:
 		mode = "response"
-		_body_label.text = str(_resp[0])
+		_set_line(str(_resp[0]))
+
+func _set_line(text: String) -> void:
+	_body_label.text = text
+	_body_label.visible_characters = 0
+	_reveal = 0.0
+	_revealing = true
+
+func _reveal_all() -> void:
+	_body_label.visible_characters = -1
+	_revealing = false
 
 func _enter_choices_or_finish() -> void:
 	if _choices.is_empty():
@@ -110,6 +136,8 @@ func _enter_choices_or_finish() -> void:
 		_render_choices()
 
 func _render_choices() -> void:
+	_revealing = false
+	_body_label.visible_characters = -1
 	var t := ""
 	for i in _choices.size():
 		t += ("▶ " if i == _sel else "   ") + str(_choices[i].get("label", ""))
@@ -121,4 +149,5 @@ func _finish() -> void:
 	active = false
 	visible = false
 	mode = "lines"
+	_revealing = false
 	finished.emit()
