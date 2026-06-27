@@ -18,35 +18,49 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import mapfmt  # noqa: E402
+import npcfmt  # noqa: E402
 import scaffold  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCENARIO_MAPS = ROOT / "scenario" / "maps"
+SCENARIO_NPCS = ROOT / "scenario" / "npcs"
 DATA_MAPS = ROOT / "data" / "maps"
+DATA_NPCS = ROOT / "data" / "npcs"
 
 
-def _map_files(args) -> list[Path]:
+def _targets(args) -> list[tuple[Path, str]]:
+    """処理対象を (パス, 種別) で返す。種別は 'map' / 'npc'。"""
     if getattr(args, "all", False):
-        return sorted(SCENARIO_MAPS.glob("*.md"))
-    return [Path(p) for p in args.files]
+        return (
+            [(p, "map") for p in sorted(SCENARIO_MAPS.glob("*.md"))]
+            + [(p, "npc") for p in sorted(SCENARIO_NPCS.glob("*.md"))]
+        )
+    out: list[tuple[Path, str]] = []
+    for p in args.files:
+        path = Path(p)
+        out.append((path, "npc" if "npcs" in path.parts else "map"))
+    return out
 
 
-def _load(path: Path) -> mapfmt.MapDoc:
-    return mapfmt.parse(path.read_text(encoding="utf-8"))
+def _parse_and_lint(path: Path, kind: str):
+    text = path.read_text(encoding="utf-8")
+    if kind == "npc":
+        doc = npcfmt.parse(text)
+        return doc, npcfmt.lint(doc)
+    doc = mapfmt.parse(text)
+    return doc, mapfmt.lint(doc)
 
 
 def cmd_lint(args) -> int:
-    files = _map_files(args)
-    if not files:
+    targets = _targets(args)
+    if not targets:
         print("対象ファイルがありません（--all か ファイル指定を）", file=sys.stderr)
         return 2
     had_error = False
-    for path in files:
-        doc = _load(path)
-        issues = mapfmt.lint(doc)
+    for path, kind in targets:
+        doc, issues = _parse_and_lint(path, kind)
         errors = [i for i in issues if i.level == "error"]
-        status = "OK" if not errors else "NG"
-        print(f"[{status}] {path}")
+        print(f"[{'OK' if not errors else 'NG'}] ({kind}) {path}")
         for i in issues:
             print(i)
         had_error = had_error or bool(errors)
@@ -54,32 +68,37 @@ def cmd_lint(args) -> int:
 
 
 def cmd_convert(args) -> int:
-    files = _map_files(args)
-    if not files:
+    targets = _targets(args)
+    if not targets:
         print("対象ファイルがありません（--all か ファイル指定を）", file=sys.stderr)
         return 2
     DATA_MAPS.mkdir(parents=True, exist_ok=True)
+    DATA_NPCS.mkdir(parents=True, exist_ok=True)
     had_error = False
-    for path in files:
-        doc = _load(path)
-        errors = [i for i in mapfmt.lint(doc) if i.level == "error"]
+    for path, kind in targets:
+        doc, issues = _parse_and_lint(path, kind)
+        errors = [i for i in issues if i.level == "error"]
         if errors:
             had_error = True
-            print(f"[skip] {path}（lintエラーのため変換しません）")
+            print(f"[skip] ({kind}) {path}（lintエラーのため変換しません）")
             for e in errors:
                 print(e)
             continue
-        data = mapfmt.to_map_dict(doc)
-        out = DATA_MAPS / f"{doc.id}.json"
+        if kind == "npc":
+            data = npcfmt.to_npc_dict(doc)
+            out = DATA_NPCS / f"{doc.id}.json"
+        else:
+            data = mapfmt.to_map_dict(doc)
+            out = DATA_MAPS / f"{doc.id}.json"
         out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"[ok] {path} -> {out.relative_to(ROOT)}")
+        print(f"[ok] ({kind}) {path} -> {out.relative_to(ROOT)}")
     return 1 if had_error else 0
 
 
 def cmd_preview(args) -> int:
     import preview  # 遅延import（Pillow未導入でも他コマンドは動く）
 
-    doc = _load(Path(args.file))
+    doc = mapfmt.parse(Path(args.file).read_text(encoding="utf-8"))
     img = preview.render(doc, tile=args.tile)
     out = Path(args.out) if args.out else ROOT / "build" / f"{doc.id or 'map'}.png"
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,13 +1,16 @@
 class_name Player
 extends Node2D
 ## グリッド単位で移動するプレイヤー。古風RPG風に、1マスずつ滑らかに歩く。
-## 壁判定は WorldMap.is_walkable に委ねる。見た目はS1暫定の四角。
+## 壁判定は WorldMap.is_walkable に、NPC等の占有は occupied に委ねる。
 
 const STEP_TIME := 0.14  # 1マスの歩行時間。将来ダッシュ時は短縮する想定
 
 var map: WorldMap = null
 var tile_size: int = 32
 var cell := Vector2i.ZERO
+var facing := Vector2i(0, 1)            # 既定は下向き。会話の対象判定に使う
+var input_locked := false               # 会話中などは移動を止める
+var occupied: Dictionary = {}           # Vector2i -> true（NPC等が居るマス）
 var _moving := false
 
 func setup(m: WorldMap, start: Vector2i, ts: int = 32) -> void:
@@ -21,7 +24,7 @@ func _cell_to_pos(c: Vector2i) -> Vector2:
 	return Vector2(c.x * tile_size + tile_size / 2.0, c.y * tile_size + tile_size / 2.0)
 
 func _process(_delta: float) -> void:
-	if _moving or map == null:
+	if _moving or input_locked or map == null:
 		return
 	var dir := Vector2i.ZERO
 	if Input.is_action_pressed("ui_up"):
@@ -33,11 +36,12 @@ func _process(_delta: float) -> void:
 	elif Input.is_action_pressed("ui_right"):
 		dir = Vector2i(1, 0)
 	if dir != Vector2i.ZERO:
+		facing = dir                    # 移動できなくても向きは変える（壁/NPCを向ける）
 		_try_move(dir)
 
 func _try_move(dir: Vector2i) -> void:
 	var target := cell + dir
-	if not map.is_walkable(target):
+	if not map.is_walkable(target) or occupied.has(target):
 		return
 	_moving = true
 	cell = target
