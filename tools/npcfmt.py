@@ -1,13 +1,20 @@
-"""kataru NPC記法 v0.3 のパースと検証。
+"""kataru NPC記法 v0.4 のパースと検証。
 
 記法:
 - frontmatter: id（必須）, name, sprite
-- 「## 会話」セクション（複数可）。見出しに条件・効果:
-    ## 会話 if=quest_herb:started set=quest_herb:collected
-- 会話本文の行:
+- 「## 会話」セクション（複数可）。見出しに条件・効果を付けられる:
+    ## 会話 if=met:yes if=key:a|key:b set=quest:done set=rep:high
+    - if=フラグ:値              … 条件。複数の if= は AND
+    - if=フラグ:値|フラグ:値    … 1つの if= 内は OR（いずれか一致でその条件を満たす）
+    - set=フラグ:値             … 効果。複数指定でまとめて適用
+    未設定フラグは "none" として扱う
+- 会話本文:
     - ふつうの会話行
-    ? 選択肢ラベル set=flag:value   … 選択肢（直後の「- 行」がその選択の応答）
+    ? 選択肢ラベル set=flag:value   … 選択肢（直後の「- 行」がその選択の応答。set= 複数可）
   条件・効果・選択肢が一切無ければ、dialogue は文字列配列（後方互換）。
+
+条件(if)のJSON表現: AND の配列。各要素は OR グループ（[flag,value] の配列）。
+  if=a:1 if=b:2|c:3  ->  [ [["a","1"]], [["b","2"],["c","3"]] ]
 """
 from __future__ import annotations
 
@@ -16,8 +23,7 @@ from dataclasses import dataclass, field
 
 from mapfmt import LintIssue, _split_frontmatter
 
-_KV = re.compile(r"(if|set)=(\w+):(\w+)")
-_SET = re.compile(r"set=(\w+):(\w+)")
+_ATTR_TOKEN = re.compile(r"(?:if|set)=\S+")
 
 
 @dataclass
@@ -38,6 +44,30 @@ def parse(text: str) -> NpcDoc:
     )
 
 
+def _parse_attrs(rest: str) -> tuple[list, list]:
+    """見出し/選択肢の属性から (conds, effects) を取り出す。
+    conds: ANDの配列。各要素は OR グループ [[flag,value], ...]。
+    effects: [[flag,value], ...]。
+    """
+    conds: list = []
+    effects: list = []
+    for tok in rest.split():
+        if tok.startswith("if="):
+            group: list = []
+            for alt in tok[3:].split("|"):
+                if ":" in alt:
+                    f, v = alt.split(":", 1)
+                    group.append([f, v])
+            if group:
+                conds.append(group)
+        elif tok.startswith("set="):
+            body = tok[4:]
+            if ":" in body:
+                f, v = body.split(":", 1)
+                effects.append([f, v])
+    return conds, effects
+
+
 def _parse_dialogue(body: str) -> list[dict]:
     branches: list[dict] = []
     cur: dict | None = None
@@ -48,15 +78,8 @@ def _parse_dialogue(body: str) -> list[dict]:
             heading = s.lstrip("#").strip()
             cur_choice = None
             if heading.startswith("会話"):
-                rest = heading[len("会話"):]
-                cond = None
-                effect = None
-                for m in _KV.finditer(rest):
-                    if m.group(1) == "if":
-                        cond = [m.group(2), m.group(3)]
-                    else:
-                        effect = [m.group(2), m.group(3)]
-                cur = {"if": cond, "set": effect, "lines": [], "choices": []}
+                conds, effects = _parse_attrs(heading[len("会話"):])
+                cur = {"if": conds, "set": effects, "lines": [], "choices": []}
                 branches.append(cur)
             else:
                 cur = None
@@ -65,12 +88,9 @@ def _parse_dialogue(body: str) -> list[dict]:
             continue
         if s.startswith("?"):
             rest = s[1:].strip()
-            cset = None
-            sm = _SET.search(rest)
-            if sm:
-                cset = [sm.group(1), sm.group(2)]
-                rest = _SET.sub("", rest).strip()
-            cur_choice = {"label": rest, "set": cset, "lines": []}
+            _, ceffects = _parse_attrs(rest)
+            label = _ATTR_TOKEN.sub("", rest).strip()
+            cur_choice = {"label": label, "set": ceffects, "lines": []}
             cur["choices"].append(cur_choice)
             continue
         m = re.match(r"-\s+(.*)", s)
@@ -100,7 +120,7 @@ def lint(doc: NpcDoc) -> list[LintIssue]:
 
 def to_npc_dict(doc: NpcDoc) -> dict:
     only = doc.branches[0] if len(doc.branches) == 1 else None
-    plain = only is not None and only["if"] is None and only["set"] is None and not only["choices"]
+    plain = only is not None and not only["if"] and not only["set"] and not only["choices"]
     if plain:
         dialogue: list = list(only["lines"])
     else:

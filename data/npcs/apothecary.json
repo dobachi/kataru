@@ -5,22 +5,52 @@
   "dialogue": [
     {
       "if": [
-        "quest_herb",
-        "done"
+        [
+          [
+            "quest_herb",
+            "done"
+          ]
+        ],
+        [
+          [
+            "met_dweller",
+            "yes"
+          ]
+        ]
       ],
-      "set": null,
+      "set": [],
+      "lines": [
+        "森の住人にも会ったんだな。あの人の薬草は、いつも質がいい。"
+      ]
+    },
+    {
+      "if": [
+        [
+          [
+            "quest_herb",
+            "done"
+          ]
+        ]
+      ],
+      "set": [],
       "lines": [
         "先日は助かったよ。よく効く薬ができそうだ。"
       ]
     },
     {
       "if": [
-        "quest_herb",
-        "collected"
+        [
+          [
+            "quest_herb",
+            "collected"
+          ]
+        ]
       ],
       "set": [
-        "quest_herb",
-        "done"
+        [
+          "quest_herb",
+          "done"
+        ]
       ],
       "lines": [
         "おお、薬草を採ってきてくれたか！ありがとう、助かるよ。"
@@ -28,20 +58,28 @@
     },
     {
       "if": [
-        "quest_herb",
-        "started"
+        [
+          [
+            "quest_herb",
+            "started"
+          ]
+        ]
       ],
-      "set": null,
+      "set": [],
       "lines": [
         "薬草はまだかい？　東の森に生えているはずだよ。"
       ]
     },
     {
       "if": [
-        "quest_herb",
-        "none"
+        [
+          [
+            "quest_herb",
+            "none"
+          ]
+        ]
       ],
-      "set": null,
+      "set": [],
       "lines": [
         "いらっしゃい。……そうだ、東の森で薬草を採ってきてくれないか？"
       ],
@@ -49,8 +87,10 @@
         {
           "label": "引き受ける",
           "set": [
-            "quest_herb",
-            "started"
+            [
+              "quest_herb",
+              "started"
+            ]
           ],
           "lines": [
             "ありがとう、助かるよ。採れたら、また声をかけてくれ。"
@@ -58,7 +98,7 @@
         },
         {
           "label": "今はやめておく",
-          "set": null,
+          "set": [],
           "lines": [
             "そうかい。気が向いたら、また来ておくれ。"
           ]

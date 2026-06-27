@@ -5,12 +5,18 @@
   "dialogue": [
     {
       "if": [
-        "quest_herb",
-        "started"
+        [
+          [
+            "quest_herb",
+            "started"
+          ]
+        ]
       ],
       "set": [
-        "quest_herb",
-        "collected"
+        [
+          "quest_herb",
+          "collected"
+        ]
       ],
       "lines": [
         "薬草が生えている。摘んで袋に入れた。"
@@ -18,17 +24,21 @@
     },
     {
       "if": [
-        "quest_herb",
-        "collected"
+        [
+          [
+            "quest_herb",
+            "collected"
+          ]
+        ]
       ],
-      "set": null,
+      "set": [],
       "lines": [
         "もう薬草は採った。"
       ]
     },
     {
-      "if": null,
-      "set": null,
+      "if": [],
+      "set": [],
       "lines": [
         "薬草が生えているが、今は用がなさそうだ。"
       ]

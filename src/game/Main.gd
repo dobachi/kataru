@@ -99,28 +99,44 @@ func _unhandled_input(event: InputEvent) -> void:
 	var choices: Array = res.get("choices", [])
 	if lines.is_empty() and choices.is_empty():
 		return
-	var effect = res.get("set", null)
-	if effect != null:
-		_flags[str(effect[0])] = str(effect[1])
+	_apply_effects(res.get("set", []))
 	_player.input_locked = true
 	_dialogue.start(str(npc.data.get("name", "")), lines, choices)
 
 func _on_choice_selected(choice: Dictionary) -> void:
-	var effect = choice.get("set", null)
-	if effect != null:
-		_flags[str(effect[0])] = str(effect[1])
+	_apply_effects(choice.get("set", []))
+
+## 効果（[[flag,value], ...]）をまとめてフラグへ適用する。
+func _apply_effects(effects) -> void:
+	if effects == null:
+		return
+	for e in effects:
+		_flags[str(e[0])] = str(e[1])
+
+## 条件（ANDの配列。各要素はORグループ [[flag,value], ...]）を評価する。
+func _cond_match(conds) -> bool:
+	if conds == null:
+		return true
+	for group in conds:                          # 各グループ（AND）
+		var any_ok := false
+		for pair in group:                       # グループ内（OR）
+			if _flags.get(str(pair[0]), "none") == str(pair[1]):
+				any_ok = true
+				break
+		if not any_ok:
+			return false
+	return true
 
 ## dialogue（文字列配列 or 分岐配列）と現在のフラグから、表示行・効果・選択肢を決める。
 func _resolve_dialogue(dialogue: Array) -> Dictionary:
 	if dialogue.is_empty():
-		return {"lines": [], "set": null, "choices": []}
+		return {"lines": [], "set": [], "choices": []}
 	if dialogue[0] is String:
-		return {"lines": dialogue, "set": null, "choices": []}   # 従来形式（無条件）
-	for b in dialogue:                                            # 分岐: 先頭から最初に一致
-		var cond = b.get("if", null)
-		if cond == null or _flags.get(str(cond[0]), "none") == str(cond[1]):
-			return {"lines": b.get("lines", []), "set": b.get("set", null), "choices": b.get("choices", [])}
-	return {"lines": [], "set": null, "choices": []}
+		return {"lines": dialogue, "set": [], "choices": []}   # 従来形式（無条件）
+	for b in dialogue:                                          # 分岐: 先頭から最初に一致
+		if _cond_match(b.get("if", [])):
+			return {"lines": b.get("lines", []), "set": b.get("set", []), "choices": b.get("choices", [])}
+	return {"lines": [], "set": [], "choices": []}
 
 func _npc_at(cell: Vector2i) -> Npc:
 	for n in _npcs:

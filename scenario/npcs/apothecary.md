@@ -4,6 +4,9 @@ name: 薬屋の店主
 sprite: apothecary
 ---
 
+## 会話 if=quest_herb:done if=met_dweller:yes
+- 森の住人にも会ったんだな。あの人の薬草は、いつも質がいい。
+
 ## 会話 if=quest_herb:done
 - 先日は助かったよ。よく効く薬ができそうだ。
 

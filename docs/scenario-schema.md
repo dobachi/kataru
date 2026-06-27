@@ -121,14 +121,30 @@ sprite: elder
 - 分岐は**先頭から最初に条件一致したもの**が選ばれる（具体的＝進んだ状態を上に書く）
 - 条件・効果が1つも無ければ、従来どおり単純な会話（後方互換）
 
-変換後 JSON の `dialogue` は、条件付きがあると分岐配列になる:
+#### 複数フラグ（AND / OR / 複数 set）
+
+```markdown
+## 会話 if=quest_herb:done if=met_dweller:yes set=reward:given set=rep:high
+- 鍵も薬草も揃ったな。礼をしよう。
+```
+
+- **複数の `if=`** … すべて満たす（**AND**）
+- **1つの `if=` 内で `a:1|b:2`** … いずれか満たす（**OR**）。例: `if=quest:started|quest:collected`
+- **複数の `set=`** … まとめて適用（選択肢 `?` の `set=` も同様）
+
+変換後 JSON の `if` は「ANDの配列（各要素はORグループ）」、`set` は「`[flag,value]` の配列」:
 
 ```json
 "dialogue": [
-  { "if": ["quest_herb","done"], "set": null, "lines": ["先日は助かったよ。"] },
-  { "if": null, "set": ["quest_herb","started"], "lines": ["…採ってきてくれないか？"] }
+  { "if": [[["quest_herb","done"]], [["met_dweller","yes"]]], "set": [],
+    "lines": ["森の住人にも会ったんだな。"] },
+  { "if": [[["quest_herb","started"],["quest_herb","collected"]]], "set": [["met_dweller","yes"]],
+    "lines": ["薬草を探しているのかい？"] },
+  { "if": [], "set": [["quest_herb","started"]], "lines": ["…採ってきてくれないか？"] }
 ]
 ```
+
+（`if: [[A,B],[C]]` は「(A または B) かつ C」。`if: []` は無条件。）
 
 フラグはゲーム実行中に保持され（マップ遷移をまたぐ）、クエスト進行に使う。
 
