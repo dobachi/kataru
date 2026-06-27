@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from mapfmt import LintIssue, _split_frontmatter
 
 _DEFAULTS = {
-    "hp": 20, "atk": 5,
+    "hp": 20, "atk": 5, "def": 1, "mp": 5,
     "exp_base": 10, "exp_growth": 10,
-    "hp_growth": 5, "atk_growth": 1,
+    "hp_growth": 5, "atk_growth": 1, "def_growth": 0, "mp_growth": 2,
 }
 
 
@@ -26,10 +26,14 @@ class CharDoc:
     name: str = ""
     hp: int = 20
     atk: int = 5
+    defense: int = 1
+    mp: int = 5
     exp_base: int = 10
     exp_growth: int = 10
     hp_growth: int = 5
     atk_growth: int = 1
+    def_growth: int = 0
+    mp_growth: int = 2
 
 
 def _to_int(v, default: int) -> int:
@@ -46,10 +50,14 @@ def parse(text: str) -> CharDoc:
         name=fm.get("name", ""),
         hp=_to_int(fm.get("hp", _DEFAULTS["hp"]), _DEFAULTS["hp"]),
         atk=_to_int(fm.get("atk", _DEFAULTS["atk"]), _DEFAULTS["atk"]),
+        defense=_to_int(fm.get("def", _DEFAULTS["def"]), _DEFAULTS["def"]),
+        mp=_to_int(fm.get("mp", _DEFAULTS["mp"]), _DEFAULTS["mp"]),
         exp_base=_to_int(fm.get("exp_base", _DEFAULTS["exp_base"]), _DEFAULTS["exp_base"]),
         exp_growth=_to_int(fm.get("exp_growth", _DEFAULTS["exp_growth"]), _DEFAULTS["exp_growth"]),
         hp_growth=_to_int(fm.get("hp_growth", _DEFAULTS["hp_growth"]), _DEFAULTS["hp_growth"]),
         atk_growth=_to_int(fm.get("atk_growth", _DEFAULTS["atk_growth"]), _DEFAULTS["atk_growth"]),
+        def_growth=_to_int(fm.get("def_growth", _DEFAULTS["def_growth"]), _DEFAULTS["def_growth"]),
+        mp_growth=_to_int(fm.get("mp_growth", _DEFAULTS["mp_growth"]), _DEFAULTS["mp_growth"]),
     )
 
 
@@ -69,6 +77,8 @@ def lint(doc: CharDoc) -> list[LintIssue]:
 def to_char_dict(doc: CharDoc) -> dict:
     return {
         "id": doc.id, "name": doc.name, "hp": doc.hp, "atk": doc.atk,
+        "def": doc.defense, "mp": doc.mp,
         "exp_base": doc.exp_base, "exp_growth": doc.exp_growth,
         "hp_growth": doc.hp_growth, "atk_growth": doc.atk_growth,
+        "def_growth": doc.def_growth, "mp_growth": doc.mp_growth,
     }

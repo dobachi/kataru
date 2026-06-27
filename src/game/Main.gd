@@ -24,8 +24,10 @@ var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
 var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
 
 const DEFAULT_STATS := {
-	"name": "あなた", "level": 1, "exp": 0, "hp": 20, "max_hp": 20, "atk": 5,
+	"name": "あなた", "level": 1, "exp": 0, "hp": 20, "max_hp": 20,
+	"mp": 5, "max_mp": 5, "atk": 5, "def": 1,
 	"exp_base": 10, "exp_growth": 10, "hp_growth": 5, "atk_growth": 1,
+	"def_growth": 0, "mp_growth": 2,
 }
 
 func _ready() -> void:
@@ -228,7 +230,10 @@ func _gain_exp_member(m: Dictionary, amount: int) -> int:
 		m["level"] = int(m.get("level", 1)) + 1
 		m["max_hp"] = int(m.get("max_hp", 1)) + int(m.get("hp_growth", 5))
 		m["atk"] = int(m.get("atk", 1)) + int(m.get("atk_growth", 1))
+		m["def"] = int(m.get("def", 0)) + int(m.get("def_growth", 0))
+		m["max_mp"] = int(m.get("max_mp", 0)) + int(m.get("mp_growth", 0))
 		m["hp"] = int(m["max_hp"])
+		m["mp"] = int(m["max_mp"])
 		leveled += 1
 	return leveled
 
@@ -254,9 +259,10 @@ func _open_inventory() -> void:
 		entries.append("%s — %s" % [str(item.get("name", id)), desc] if desc != "" else str(item.get("name", id)))
 	var lines: Array = []
 	for m in _party:
-		lines.append("%s  Lv%d  HP %d/%d  ちから %d  けいけんち %d" % [
+		lines.append("%s  Lv%d  HP %d/%d  MP %d/%d  ちから %d  まもり %d" % [
 			str(m.get("name", "")), int(m.get("level", 1)), int(m.get("hp", 0)),
-			int(m.get("max_hp", 0)), int(m.get("atk", 0)), int(m.get("exp", 0)),
+			int(m.get("max_hp", 0)), int(m.get("mp", 0)), int(m.get("max_mp", 0)),
+			int(m.get("atk", 0)), int(m.get("def", 0)),
 		])
 	_inv_box.open(entries, "\n".join(PackedStringArray(lines)))
 	_player.input_locked = true

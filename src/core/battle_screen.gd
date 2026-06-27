@@ -11,9 +11,13 @@ var mode := "command"            # "command" | "message"
 var _php := 0
 var _pmax := 0
 var _patk := 0
+var _pdef := 0
+var _pmp := 0
+var _pmmp := 0
 var _ehp := 0
 var _emax := 0
 var _eatk := 1
+var _edef := 0
 var _eexp := 0
 var _ename := ""
 
@@ -62,9 +66,13 @@ func start(stats: Dictionary, enemy: Dictionary) -> void:
 	_php = int(stats.get("hp", 1))
 	_pmax = int(stats.get("max_hp", _php))
 	_patk = int(stats.get("atk", 1))
+	_pdef = int(stats.get("def", 0))
+	_pmp = int(stats.get("mp", 0))
+	_pmmp = int(stats.get("max_mp", 0))
 	_ehp = int(enemy.get("hp", 1))
 	_emax = _ehp
 	_eatk = int(enemy.get("atk", 1))
+	_edef = int(enemy.get("def", 0))
 	_eexp = int(enemy.get("exp", 0))
 	_ename = str(enemy.get("name", "てき"))
 	_sel = 0
@@ -74,7 +82,7 @@ func start(stats: Dictionary, enemy: Dictionary) -> void:
 	_show_messages(["%s が あらわれた！" % _ename], "command")
 
 func _update_info() -> void:
-	_info.text = "%s    HP %d/%d\nあなた    HP %d/%d" % [_ename, _ehp, _emax, _php, _pmax]
+	_info.text = "%s    HP %d/%d\nあなた    HP %d/%d   MP %d/%d" % [_ename, _ehp, _emax, _php, _pmax, _pmp, _pmmp]
 
 func _render_menu() -> void:
 	var t := ""
@@ -108,9 +116,10 @@ func _choose() -> void:
 		_show_messages(["%s は にげだした！" % "あなた"], "escape")
 		return
 	# たたかう
-	_ehp = max(0, _ehp - _patk)
+	var dmg: int = max(1, _patk - _edef)
+	_ehp = max(0, _ehp - dmg)
 	_update_info()
-	var msgs := ["%s に %d の ダメージ！" % [_ename, _patk]]
+	var msgs := ["%s に %d の ダメージ！" % [_ename, dmg]]
 	if _ehp <= 0:
 		msgs.append("%s を たおした！" % _ename)
 		if _eexp > 0:
@@ -133,9 +142,10 @@ func _resolve_after() -> void:
 			_msg.text = "どうする？"
 			_render_menu()
 		"enemy":
-			_php = max(0, _php - _eatk)
+			var dmg: int = max(1, _eatk - _pdef)
+			_php = max(0, _php - dmg)
 			_update_info()
-			var msgs := ["%s の こうげき！ %d の ダメージ！" % [_ename, _eatk]]
+			var msgs := ["%s の こうげき！ %d の ダメージ！" % [_ename, dmg]]
 			if _php <= 0:
 				msgs.append("あなたは ちからつきた……")
 				_show_messages(msgs, "lose")

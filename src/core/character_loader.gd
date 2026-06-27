@@ -16,6 +16,7 @@ static func load_character(id: String) -> Dictionary:
 ## キャラクター定義から、実行用ステータス（level/exp 等を含む）を作る。
 static func make_stats(c: Dictionary) -> Dictionary:
 	var max_hp := int(c.get("hp", 20))
+	var max_mp := int(c.get("mp", 5))
 	return {
 		"char": str(c.get("id", "")),
 		"name": str(c.get("name", "あなた")),
@@ -23,9 +24,14 @@ static func make_stats(c: Dictionary) -> Dictionary:
 		"exp": 0,
 		"hp": max_hp,
 		"max_hp": max_hp,
+		"mp": max_mp,
+		"max_mp": max_mp,
 		"atk": int(c.get("atk", 5)),
+		"def": int(c.get("def", 1)),
 		"exp_base": int(c.get("exp_base", 10)),
 		"exp_growth": int(c.get("exp_growth", 10)),
 		"hp_growth": int(c.get("hp_growth", 5)),
 		"atk_growth": int(c.get("atk_growth", 1)),
+		"def_growth": int(c.get("def_growth", 0)),
+		"mp_growth": int(c.get("mp_growth", 2)),
 	}

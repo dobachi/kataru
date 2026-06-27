@@ -216,6 +216,7 @@ id: slime
 name: スライム
 hp: 8
 atk: 3
+def: 1
 exp: 5
 ---
 ```
@@ -234,12 +235,19 @@ id: hero
 name: 主人公
 hp: 20            # 初期最大HP
 atk: 5            # 初期ちから
+def: 2            # 初期まもり（防御）
+mp: 8             # 初期最大MP
 exp_base: 10      # Lv1→2 に必要な経験値
 exp_growth: 10    # レベルごとに必要経験値へ加える量
 hp_growth: 5      # レベルアップ時の最大HP上昇
 atk_growth: 1     # レベルアップ時のちから上昇
+def_growth: 1     # レベルアップ時のまもり上昇
+mp_growth: 2      # レベルアップ時の最大MP上昇
 ---
 ```
+
+ダメージは `max(1, こうげき - 相手のまもり)`。レベルアップで HP/MP は全回復。
+MP はステータスに保持・表示（消費するスキル/呪文は将来追加）。
 
 - 次レベルに必要な経験値 = `exp_base + (level-1) * exp_growth`
 - 開始キャラは `Main.gd` の `START_CHAR`（現在 `hero`）
