@@ -1,0 +1,15 @@
+{
+  "id": "forest",
+  "image": "overworld.png",
+  "default": ".",
+  "tiles": {
+    ".": {
+      "col": 0,
+      "solid": false
+    },
+    "#": {
+      "col": 2,
+      "solid": true
+    }
+  }
+}

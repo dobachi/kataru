@@ -1,35 +1,33 @@
 {
-  "id": "forest",
-  "name": "東の森",
-  "tileset": "forest",
-  "image": "overworld.png",
-  "width": 16,
-  "height": 10,
+  "id": "dungeon",
+  "name": "洞窟",
+  "tileset": "dungeon",
+  "image": "dungeon.png",
+  "width": 14,
+  "height": 9,
   "player_start": [
     2,
     4
   ],
   "tiles": [
     [
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
       0,
@@ -42,48 +40,42 @@
       0,
       0,
       0,
-      0,
-      0,
-      2
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
-      2,
-      2,
+      1,
+      1,
+      1,
+      1,
       0,
       0,
+      1,
+      1,
       0,
       0,
-      2,
-      2,
-      0,
-      0,
-      0,
-      0,
-      2
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
-      0,
-      0,
-      0,
-      2,
+      1,
       0,
       0,
       0,
       0,
       0,
       0,
+      1,
       0,
       0,
-      2
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
       0,
@@ -91,104 +83,76 @@
       0,
       0,
       0,
-      2,
-      2,
       0,
       0,
+      1,
       0,
       0,
-      0,
-      2
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
-      0,
-      0,
-      2,
-      2,
-      0,
-      0,
+      1,
       0,
       0,
       0,
       0,
       0,
       0,
-      2
+      1,
+      0,
+      0,
+      1
     ],
     [
-      2,
+      1,
       0,
       0,
+      1,
+      1,
+      1,
+      1,
       0,
       0,
+      1,
+      1,
       0,
       0,
-      0,
-      2,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      2
+      1
     ],
     [
-      2,
-      0,
-      0,
-      2,
-      2,
+      1,
       0,
       0,
       0,
       0,
       0,
       0,
-      2,
       0,
       0,
       0,
-      2
+      0,
+      0,
+      0,
+      1
     ],
     [
-      2,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      2
-    ],
-    [
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      2
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
     ]
   ],
   "solid": [
@@ -206,8 +170,6 @@
       true,
       true,
       true,
-      true,
-      true,
       true
     ],
     [
@@ -224,6 +186,20 @@
       false,
       false,
       false,
+      true
+    ],
+    [
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
       false,
       false,
       true
@@ -233,40 +209,6 @@
       false,
       false,
       true,
-      true,
-      false,
-      false,
-      false,
-      false,
-      true,
-      true,
-      false,
-      false,
-      false,
-      false,
-      true
-    ],
-    [
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true
-    ],
-    [
-      true,
-      false,
       false,
       false,
       false,
@@ -274,28 +216,6 @@
       false,
       false,
       true,
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true
-    ],
-    [
-      true,
-      false,
-      false,
-      false,
-      false,
-      true,
-      true,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
       false,
       false,
       true
@@ -309,11 +229,25 @@
       false,
       false,
       false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true
+    ],
+    [
+      true,
+      false,
+      false,
       true,
       false,
       false,
       false,
       false,
+      false,
+      false,
+      true,
       false,
       false,
       true
@@ -324,14 +258,12 @@
       false,
       true,
       true,
-      false,
-      false,
-      false,
-      false,
+      true,
+      true,
       false,
       false,
       true,
-      false,
+      true,
       false,
       false,
       true
@@ -350,13 +282,9 @@
       false,
       false,
       false,
-      false,
-      false,
       true
     ],
     [
-      true,
-      true,
       true,
       true,
       true,
@@ -373,50 +301,17 @@
       true
     ]
   ],
-  "npcs": [
-    {
-      "id": "herb-spot",
-      "pos": [
-        10,
-        5
-      ]
-    },
-    {
-      "id": "slime",
-      "pos": [
-        3,
-        6
-      ]
-    },
-    {
-      "id": "forest-dweller",
-      "pos": [
-        14,
-        7
-      ]
-    }
-  ],
+  "npcs": [],
   "warps": [
-    {
-      "pos": [
-        13,
-        1
-      ],
-      "map": "dungeon",
-      "to": [
-        2,
-        4
-      ]
-    },
     {
       "pos": [
         1,
         4
       ],
-      "map": "village",
+      "map": "forest",
       "to": [
-        17,
-        8
+        13,
+        2
       ]
     }
   ]

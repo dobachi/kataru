@@ -23,6 +23,7 @@ import itemfmt  # noqa: E402
 import mapfmt  # noqa: E402
 import npcfmt  # noqa: E402
 import scaffold  # noqa: E402
+import tilesetfmt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SCENARIO_MAPS = ROOT / "scenario" / "maps"
@@ -30,11 +31,13 @@ SCENARIO_NPCS = ROOT / "scenario" / "npcs"
 SCENARIO_ITEMS = ROOT / "scenario" / "items"
 SCENARIO_ENEMIES = ROOT / "scenario" / "enemies"
 SCENARIO_CHARS = ROOT / "scenario" / "characters"
+SCENARIO_TILESETS = ROOT / "scenario" / "tilesets"
 DATA_MAPS = ROOT / "data" / "maps"
 DATA_NPCS = ROOT / "data" / "npcs"
 DATA_ITEMS = ROOT / "data" / "items"
 DATA_ENEMIES = ROOT / "data" / "enemies"
 DATA_CHARS = ROOT / "data" / "characters"
+DATA_TILESETS = ROOT / "data" / "tilesets"
 
 
 def _kind_of(path: Path) -> str:
@@ -46,20 +49,31 @@ def _kind_of(path: Path) -> str:
         return "enemy"
     if "characters" in path.parts:
         return "character"
+    if "tilesets" in path.parts:
+        return "tileset"
     return "map"
 
 
 def _targets(args) -> list[tuple[Path, str]]:
-    """処理対象を (パス, 種別) で返す。種別は 'map'/'npc'/'item'/'enemy'/'character'。"""
+    """処理対象を (パス, 種別) で返す。"""
     if getattr(args, "all", False):
         return (
-            [(p, "map") for p in sorted(SCENARIO_MAPS.glob("*.md"))]
+            [(p, "tileset") for p in sorted(SCENARIO_TILESETS.glob("*.md"))]
+            + [(p, "map") for p in sorted(SCENARIO_MAPS.glob("*.md"))]
             + [(p, "npc") for p in sorted(SCENARIO_NPCS.glob("*.md"))]
             + [(p, "item") for p in sorted(SCENARIO_ITEMS.glob("*.md"))]
             + [(p, "enemy") for p in sorted(SCENARIO_ENEMIES.glob("*.md"))]
             + [(p, "character") for p in sorted(SCENARIO_CHARS.glob("*.md"))]
         )
     return [(Path(p), _kind_of(Path(p))) for p in args.files]
+
+
+def _tileset_for(doc) -> dict:
+    """マップが参照するタイルセットを読み込む（無ければ空dict）。"""
+    path = SCENARIO_TILESETS / f"{doc.tileset}.md"
+    if not path.exists():
+        return {}
+    return tilesetfmt.to_tileset_dict(tilesetfmt.parse(path.read_text(encoding="utf-8")))
 
 
 def _parse_and_lint(path: Path, kind: str):
@@ -76,8 +90,11 @@ def _parse_and_lint(path: Path, kind: str):
     if kind == "character":
         doc = charfmt.parse(text)
         return doc, charfmt.lint(doc)
+    if kind == "tileset":
+        doc = tilesetfmt.parse(text)
+        return doc, tilesetfmt.lint(doc)
     doc = mapfmt.parse(text)
-    return doc, mapfmt.lint(doc)
+    return doc, mapfmt.lint(doc, _tileset_for(doc))
 
 
 def cmd_lint(args) -> int:
@@ -106,6 +123,7 @@ def cmd_convert(args) -> int:
     DATA_ITEMS.mkdir(parents=True, exist_ok=True)
     DATA_ENEMIES.mkdir(parents=True, exist_ok=True)
     DATA_CHARS.mkdir(parents=True, exist_ok=True)
+    DATA_TILESETS.mkdir(parents=True, exist_ok=True)
     had_error = False
     for path, kind in targets:
         doc, issues = _parse_and_lint(path, kind)
@@ -128,8 +146,11 @@ def cmd_convert(args) -> int:
         elif kind == "character":
             data = charfmt.to_char_dict(doc)
             out = DATA_CHARS / f"{doc.id}.json"
+        elif kind == "tileset":
+            data = tilesetfmt.to_tileset_dict(doc)
+            out = DATA_TILESETS / f"{doc.id}.json"
         else:
-            data = mapfmt.to_map_dict(doc)
+            data = mapfmt.to_map_dict(doc, _tileset_for(doc))
             out = DATA_MAPS / f"{doc.id}.json"
         out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"[ok] ({kind}) {path} -> {out.relative_to(ROOT)}")

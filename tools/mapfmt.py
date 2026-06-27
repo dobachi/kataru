@@ -1,24 +1,24 @@
-"""kataru マップ記法 v0.1 のパースと検証。
+"""kataru マップ記法のパースと検証（タイルセット対応）。
 
 記法:
-- frontmatter: id（必須）, name, tileset
+- frontmatter: id（必須）, name, tileset（参照するタイルセットid）
 - 本文中の最初のフェンス済みコードブロックを「レイアウト」とみなす
-- シンボル表:
-    '#' = 壁(WALL) / '.' = 床(FLOOR) / '@' = プレイヤー初期位置(床扱い)
-    'A'..'Z' = NPC配置点（床扱い。『配置』で npc= に解決）
-    'a'..'z' = 移動口/warp（床扱い。『接続』で map/x/y に解決）
-- 『配置』: "- N: npc=elder"            配置記号(大文字) -> NPC id
-- 『接続』: "- f: map=forest x=2 y=4"    移動口(小文字) -> 遷移先(map,x,y)
+- 記号の意味:
+    '@'        = プレイヤー初期位置（下は default 地形）
+    'A'..'Z'   = NPC配置点（『配置』で npc= に解決。下は default 地形）
+    'a'..'z'   = 移動口/warp（『接続』で map/x/y に解決。下は default 地形）
+    それ以外   = 地形記号。タイルセットの『タイル』で 列(col)/通行可否(solid) が決まる
+- 『配置』: "- N: npc=elder"
+- 『接続』: "- f: map=forest x=2 y=4"
+
+描画列・通行可否は **タイルセット** が決めるため、同じ記号でもタイルセットを変えれば
+見た目（街/森/ダンジョン）と当たり判定を変えられる。
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
 
-WALL = 1
-FLOOR = 0
-
-_KNOWN = re.compile(r"[#.@A-Za-z]")
 _PLACEMENT = re.compile(r"\s*-\s*([A-Z])\s*:\s*npc\s*=\s*(\S+)")
 _CONNECTION = re.compile(r"\s*-\s*([a-z])\s*:\s*map\s*=\s*(\w+)\s+x\s*=\s*(\d+)\s+y\s*=\s*(\d+)")
 
@@ -29,8 +29,8 @@ class MapDoc:
     name: str = ""
     tileset: str = "overworld"
     grid: list[str] = field(default_factory=list)
-    placements: dict[str, str] = field(default_factory=dict)         # 記号 -> npc id
-    connections: dict[str, dict] = field(default_factory=dict)        # 記号 -> {map,x,y}
+    placements: dict[str, str] = field(default_factory=dict)
+    connections: dict[str, dict] = field(default_factory=dict)
 
 
 @dataclass
@@ -101,12 +101,19 @@ def _parse_connections(body: str) -> dict[str, dict]:
     return res
 
 
-def lint(doc: MapDoc) -> list[LintIssue]:
+def _is_overlay(ch: str) -> bool:
+    return ch == "@" or (ch.isalpha() and (ch.isupper() or ch.islower()))
+
+
+def lint(doc: MapDoc, tileset: dict | None) -> list[LintIssue]:
     issues: list[LintIssue] = []
     if not doc.id:
         issues.append(LintIssue("error", "frontmatter に id がありません"))
     if not doc.name:
         issues.append(LintIssue("warning", "frontmatter に name がありません"))
+    if not tileset or not tileset.get("tiles"):
+        issues.append(LintIssue("error", f"タイルセット '{doc.tileset}' が見つかりません"))
+        tileset = {"tiles": {}, "default": "."}
 
     g = doc.grid
     if not g:
@@ -117,20 +124,20 @@ def lint(doc: MapDoc) -> list[LintIssue]:
     if len(widths) != 1:
         issues.append(LintIssue("error", f"マップが矩形ではありません（行の長さ: {widths}）"))
 
+    terrain = tileset.get("tiles", {})
     npc_markers: set[str] = set()
     warp_markers: set[str] = set()
     starts = 0
     for y, row in enumerate(g):
         for x, ch in enumerate(row):
-            if not _KNOWN.fullmatch(ch):
-                shown = repr(ch).strip("'")
-                issues.append(LintIssue("error", f"未知の記号 '{shown}' at ({x},{y})"))
             if ch == "@":
                 starts += 1
             elif ch.isalpha() and ch.isupper():
                 npc_markers.add(ch)
             elif ch.isalpha() and ch.islower():
                 warp_markers.add(ch)
+            elif ch not in terrain:
+                issues.append(LintIssue("error", f"未知の地形記号 '{ch}' at ({x},{y})（タイルセット '{doc.tileset}' に無い）"))
 
     if starts == 0:
         issues.append(LintIssue("warning", "プレイヤー初期位置 '@' がありません（開始マップなら必須）"))
@@ -143,7 +150,6 @@ def lint(doc: MapDoc) -> list[LintIssue]:
     for mk in sorted(doc.placements):
         if mk not in npc_markers:
             issues.append(LintIssue("warning", f"『配置』の '{mk}' がマップ上にありません"))
-
     for mk in sorted(warp_markers):
         if mk not in doc.connections:
             issues.append(LintIssue("error", f"移動口 '{mk}' に対応する『接続』(map=... x=.. y=..) がありません"))
@@ -154,38 +160,52 @@ def lint(doc: MapDoc) -> list[LintIssue]:
     return issues
 
 
-def to_map_dict(doc: MapDoc) -> dict:
-    """検証済みの MapDoc を、Godot が読む JSON 構造へ変換する。"""
+def to_map_dict(doc: MapDoc, tileset: dict) -> dict:
+    """検証済みの MapDoc を、タイルセットで解決して Godot 用 JSON に変換する。
+    tiles=描画列のグリッド, solid=通行不可フラグのグリッド を出力する。
+    """
+    terrain = tileset.get("tiles", {})
+    default_sym = tileset.get("default", ".")
     g = doc.grid
     height = len(g)
     width = len(g[0]) if height else 0
     tiles: list[list[int]] = []
+    solid: list[list[bool]] = []
     player_start = [1, 1]
     npcs: list[dict] = []
     warps: list[dict] = []
     for y, row in enumerate(g):
         trow: list[int] = []
+        srow: list[bool] = []
         for x, ch in enumerate(row):
-            trow.append(WALL if ch == "#" else FLOOR)
-            if ch == "@":
-                player_start = [x, y]
-            elif ch.isalpha() and ch.isupper():
-                npc_id = doc.placements.get(ch)
-                if npc_id:
-                    npcs.append({"id": npc_id, "pos": [x, y]})
-            elif ch.isalpha() and ch.islower():
-                conn = doc.connections.get(ch)
-                if conn:
-                    warps.append({"pos": [x, y], "map": conn["map"], "to": [conn["x"], conn["y"]]})
+            sym = ch
+            if _is_overlay(ch):
+                sym = default_sym
+                if ch == "@":
+                    player_start = [x, y]
+                elif ch.isupper():
+                    npc_id = doc.placements.get(ch)
+                    if npc_id:
+                        npcs.append({"id": npc_id, "pos": [x, y]})
+                elif ch.islower():
+                    conn = doc.connections.get(ch)
+                    if conn:
+                        warps.append({"pos": [x, y], "map": conn["map"], "to": [conn["x"], conn["y"]]})
+            tdef = terrain.get(sym, {"col": 0, "solid": False})
+            trow.append(int(tdef.get("col", 0)))
+            srow.append(bool(tdef.get("solid", False)))
         tiles.append(trow)
+        solid.append(srow)
     return {
         "id": doc.id,
         "name": doc.name,
         "tileset": doc.tileset,
+        "image": tileset.get("image", "overworld.png"),
         "width": width,
         "height": height,
         "player_start": player_start,
         "tiles": tiles,
+        "solid": solid,
         "npcs": npcs,
         "warps": warps,
     }

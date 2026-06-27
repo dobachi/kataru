@@ -1,0 +1,15 @@
+{
+  "id": "overworld",
+  "image": "overworld.png",
+  "default": ".",
+  "tiles": {
+    ".": {
+      "col": 0,
+      "solid": false
+    },
+    "#": {
+      "col": 1,
+      "solid": true
+    }
+  }
+}

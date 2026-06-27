@@ -124,6 +124,25 @@ def slime():
     return im
 
 
+def cave_floor():
+    im = _img()
+    _rect(im, 0, 0, T, T, (78, 72, 86, 255))
+    _scatter(im, [(3, 4), (11, 2), (6, 9), (13, 12), (8, 14), (2, 11), (9, 6)], (62, 56, 70, 255))
+    _scatter(im, [(5, 3), (12, 8)], (96, 90, 104, 255))
+    return im
+
+
+def cave_wall():
+    im = _img()
+    _rect(im, 0, 0, T, T, (54, 50, 64, 255))
+    _rect(im, 0, 0, T, 1, (78, 74, 90, 255))
+    for y in (0, 5, 10, 15):
+        _rect(im, 0, y, T, y + 1, (34, 30, 44, 255))
+    for x, y in ((6, 0), (12, 5), (3, 10), (10, 10)):
+        _rect(im, x, y, x + 1, y + 5, (34, 30, 44, 255))
+    return im
+
+
 def herb():
     im = _img()
     _rect(im, 7, 9, 9, 15, (90, 120, 60, 255))     # stem
@@ -147,6 +166,10 @@ def main():
     _atlas(
         [grass(), stone(), tree(), water(), path()],
         os.path.join(ROOT, "assets/tiles/overworld.png"),
+    )
+    _atlas(
+        [cave_floor(), cave_wall()],
+        os.path.join(ROOT, "assets/tiles/dungeon.png"),
     )
     _atlas(
         [
