@@ -31,7 +31,16 @@ class NpcDoc:
     id: str = ""
     name: str = ""
     sprite: str = ""
+    hide_if: list | None = None        # [flag, value] のとき、その条件下では配置しない
     branches: list[dict] = field(default_factory=list)
+
+
+def _parse_cond(s: str):
+    s = s.strip()
+    if ":" in s:
+        f, v = s.split(":", 1)
+        return [f.strip(), v.strip()]
+    return None
 
 
 def parse(text: str) -> NpcDoc:
@@ -40,6 +49,7 @@ def parse(text: str) -> NpcDoc:
         id=fm.get("id", ""),
         name=fm.get("name", ""),
         sprite=fm.get("sprite", ""),
+        hide_if=_parse_cond(fm.get("hide_if", "")),
         branches=_parse_dialogue(body),
     )
 
@@ -166,9 +176,12 @@ def to_npc_dict(doc: NpcDoc) -> dict:
                     _entry_with_ops({"label": c["label"], "lines": c["lines"]}, c) for c in b["choices"]
                 ]
             dialogue.append(entry)
-    return {
+    result = {
         "id": doc.id,
         "name": doc.name,
         "sprite": doc.sprite,
         "dialogue": dialogue,
     }
+    if doc.hide_if:
+        result["hide_if"] = doc.hide_if
+    return result

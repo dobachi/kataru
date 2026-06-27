@@ -21,7 +21,8 @@ var _party: Array = []            # パーティ（各要素がキャラのstats
 var _stats: Dictionary = {}       # リーダーのstatsへの参照（戦闘・マップ表示に使用）
 var _battle: BattleScreen
 var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
-var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
+var _pending_remove := false      # 会話終了後に相手NPCを除去する（加入時）
+var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利・加入時に除去）
 
 const DEFAULT_STATS := {
 	"name": "あなた", "level": 1, "exp": 0, "hp": 20, "max_hp": 20,
@@ -90,10 +91,13 @@ func _load_map(map_id: String, spawn := Vector2i(-1, -1)) -> void:
 	_map_root.add_child(renderer)
 
 	for entry in map.npcs:
+		var data := NpcLoader.load_npc(str(entry.get("id", "")))
+		if _npc_hidden(data):
+			continue
 		var pos: Array = entry.get("pos", [1, 1])
 		var cell := Vector2i(int(pos[0]), int(pos[1]))
 		var npc := Npc.new()
-		npc.setup(cell, NpcLoader.load_npc(str(entry.get("id", ""))), TILE_SIZE)
+		npc.setup(cell, data, TILE_SIZE)
 		_map_root.add_child(npc)
 		_npcs.append(npc)
 		_player.occupied[cell] = true
@@ -177,6 +181,9 @@ func _on_choice_selected(choice: Dictionary) -> void:
 	_apply_ops(choice)
 
 func _on_dialogue_finished() -> void:
+	if _pending_remove:
+		_pending_remove = false
+		_remove_talking_npc()
 	if _pending_battle != "":
 		var id := _pending_battle
 		_pending_battle = ""
@@ -196,10 +203,7 @@ func _on_battle_finished(result: Dictionary) -> void:
 	_stats["hp"] = int(result.get("player_hp", _stats.get("hp", 1)))
 	var outcome := str(result.get("outcome", ""))
 	if outcome == "win":
-		if _talking_npc != null and is_instance_valid(_talking_npc):
-			_player.occupied.erase(_talking_npc.cell)
-			_npcs.erase(_talking_npc)
-			_talking_npc.queue_free()
+		_remove_talking_npc()
 		_gain_exp(int(result.get("exp", 0)))
 	elif outcome == "lose":
 		_stats["hp"] = int(_stats.get("max_hp", 1))
@@ -278,8 +282,11 @@ func _apply_ops(d: Dictionary) -> void:
 		_inventory.erase(str(it))
 	if str(d.get("battle", "")) != "":
 		_pending_battle = str(d.get("battle"))
-	for cid in d.get("join", []):
+	var joins: Array = d.get("join", [])
+	for cid in joins:
 		_recruit(str(cid))
+	if not joins.is_empty():
+		_pending_remove = true
 
 ## 仲間を加入させる（既にパーティにいれば何もしない）。
 func _recruit(cid: String) -> void:
@@ -333,6 +340,21 @@ func _npc_at(cell: Vector2i) -> Npc:
 		if n.cell == cell:
 			return n
 	return null
+
+## hide_if 条件（[flag,value]）が現在のフラグと一致すれば、そのNPCは配置しない。
+func _npc_hidden(data: Dictionary) -> bool:
+	var h = data.get("hide_if", null)
+	if h == null:
+		return false
+	return _flags.get(str(h[0]), "none") == str(h[1])
+
+## 現在話している相手をマップから取り除く（加入・撃破時）。
+func _remove_talking_npc() -> void:
+	if _talking_npc != null and is_instance_valid(_talking_npc):
+		_player.occupied.erase(_talking_npc.cell)
+		_npcs.erase(_talking_npc)
+		_talking_npc.queue_free()
+	_talking_npc = null
 
 func _save() -> void:
 	var ok := SaveManager.save_state({

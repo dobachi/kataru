@@ -31,5 +31,9 @@
         "knight"
       ]
     }
+  ],
+  "hide_if": [
+    "joined_knight",
+    "yes"
   ]
 }

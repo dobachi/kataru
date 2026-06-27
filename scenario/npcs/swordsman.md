@@ -2,6 +2,7 @@
 id: swordsman
 name: 旅の剣士
 sprite: swordsman
+hide_if: joined_knight:yes
 ---
 
 ## 会話 if=joined_knight:yes
