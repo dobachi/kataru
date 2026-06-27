@@ -276,6 +276,13 @@
   ],
   "npcs": [
     {
+      "id": "apothecary",
+      "pos": [
+        16,
+        3
+      ]
+    },
+    {
       "id": "elder",
       "pos": [
         8,
