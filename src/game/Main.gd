@@ -145,7 +145,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_dialogue.advance()
 		return
 	if _inv_box.active:
-		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I:
+		if event.is_action_pressed("ui_up"):
+			_inv_box.scroll(-1)
+		elif event.is_action_pressed("ui_down"):
+			_inv_box.scroll(1)
+		elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I:
 			_inv_box.close()
 			_player.input_locked = false
 		return

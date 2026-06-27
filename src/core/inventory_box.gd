@@ -1,35 +1,41 @@
 class_name InventoryBox
 extends CanvasLayer
-## メニュー（なかま＝ステータス／もちもの）を見やすく表示するウィンドウ。I キーで開閉。
+## メニュー（なかま／もちもの）。内容が多いときは ↑↓ でスクロールできる。I で開閉。
 
 var active := false
 var _title: Label
 var _body: Label
+var _scroll: ScrollContainer
 
 func _ready() -> void:
 	layer = 15
 	var panel := Panel.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -170
-	panel.offset_right = 170
-	panel.offset_top = -100
-	panel.offset_bottom = 100
+	panel.offset_left = -175
+	panel.offset_right = 175
+	panel.offset_top = -110
+	panel.offset_bottom = 110
 	add_child(panel)
 
 	_title = Label.new()
-	_title.text = "メニュー"
+	_title.text = "メニュー   （↑↓でスクロール / I で閉じる）"
 	_title.modulate = Color(1.0, 0.92, 0.6)
 	_title.position = Vector2(14, 8)
 	panel.add_child(_title)
 
+	_scroll = ScrollContainer.new()
+	_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_scroll.offset_left = 14
+	_scroll.offset_top = 30
+	_scroll.offset_right = -14
+	_scroll.offset_bottom = -12
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_scroll)
+
 	_body = Label.new()
-	_body.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_body.offset_left = 14
-	_body.offset_top = 30
-	_body.offset_right = -14
-	_body.offset_bottom = -10
 	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	panel.add_child(_body)
+	_body.custom_minimum_size = Vector2(322, 0)   # 折り返し幅（縦はコンテンツに追従）
+	_scroll.add_child(_body)
 
 	visible = false
 
@@ -51,8 +57,12 @@ func open(party: Array, items: Array) -> void:
 			var desc := str(it.get("desc", ""))
 			lines.append(("  ・%s … %s" % [str(it.get("name", "")), desc]) if desc != "" else ("  ・%s" % str(it.get("name", ""))))
 	_body.text = "\n".join(PackedStringArray(lines))
+	_scroll.scroll_vertical = 0
 	active = true
 	visible = true
+
+func scroll(dir: int) -> void:
+	_scroll.scroll_vertical += dir * 16
 
 func close() -> void:
 	active = false
