@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 from mapfmt import LintIssue, _split_frontmatter
 
-_ATTR_TOKEN = re.compile(r"(?:if|set)=\S+")
+_ATTR_TOKEN = re.compile(r"(?:if|set|give|take|has|nohas)=\S+")
 
 
 @dataclass
@@ -44,13 +44,13 @@ def parse(text: str) -> NpcDoc:
     )
 
 
-def _parse_attrs(rest: str) -> tuple[list, list]:
-    """見出し/選択肢の属性から (conds, effects) を取り出す。
+def _parse_attrs(rest: str) -> tuple[list, dict]:
+    """見出し/選択肢の属性から (conds, ops) を取り出す。
     conds: ANDの配列。各要素は OR グループ [[flag,value], ...]。
-    effects: [[flag,value], ...]。
+    ops: { set:[[flag,value]], give:[id], take:[id], has:[id], nohas:[id] }
     """
     conds: list = []
-    effects: list = []
+    ops: dict = {"set": [], "give": [], "take": [], "has": [], "nohas": []}
     for tok in rest.split():
         if tok.startswith("if="):
             group: list = []
@@ -64,8 +64,20 @@ def _parse_attrs(rest: str) -> tuple[list, list]:
             body = tok[4:]
             if ":" in body:
                 f, v = body.split(":", 1)
-                effects.append([f, v])
-    return conds, effects
+                ops["set"].append([f, v])
+        elif tok.startswith("give="):
+            if tok[5:]:
+                ops["give"].append(tok[5:])
+        elif tok.startswith("take="):
+            if tok[5:]:
+                ops["take"].append(tok[5:])
+        elif tok.startswith("has="):
+            if tok[4:]:
+                ops["has"].append(tok[4:])
+        elif tok.startswith("nohas="):
+            if tok[6:]:
+                ops["nohas"].append(tok[6:])
+    return conds, ops
 
 
 def _parse_dialogue(body: str) -> list[dict]:
@@ -78,8 +90,9 @@ def _parse_dialogue(body: str) -> list[dict]:
             heading = s.lstrip("#").strip()
             cur_choice = None
             if heading.startswith("会話"):
-                conds, effects = _parse_attrs(heading[len("会話"):])
-                cur = {"if": conds, "set": effects, "lines": [], "choices": []}
+                conds, ops = _parse_attrs(heading[len("会話"):])
+                cur = {"if": conds, "lines": [], "choices": []}
+                cur.update(ops)
                 branches.append(cur)
             else:
                 cur = None
@@ -88,9 +101,10 @@ def _parse_dialogue(body: str) -> list[dict]:
             continue
         if s.startswith("?"):
             rest = s[1:].strip()
-            _, ceffects = _parse_attrs(rest)
+            _, cops = _parse_attrs(rest)
             label = _ATTR_TOKEN.sub("", rest).strip()
-            cur_choice = {"label": label, "set": ceffects, "lines": []}
+            cur_choice = {"label": label, "lines": []}
+            cur_choice.update(cops)
             cur["choices"].append(cur_choice)
             continue
         m = re.match(r"-\s+(.*)", s)
@@ -101,6 +115,9 @@ def _parse_dialogue(body: str) -> list[dict]:
             else:
                 cur["lines"].append(text)
     return [b for b in branches if b["lines"] or b["choices"]]
+
+
+_OP_KEYS = ("set", "give", "take", "has", "nohas")
 
 
 def lint(doc: NpcDoc) -> list[LintIssue]:
@@ -118,18 +135,29 @@ def lint(doc: NpcDoc) -> list[LintIssue]:
     return issues
 
 
+def _has_ops(d: dict) -> bool:
+    return any(d.get(k) for k in _OP_KEYS)
+
+
+def _entry_with_ops(base: dict, src: dict) -> dict:
+    for k in _OP_KEYS:
+        if src.get(k):
+            base[k] = src[k]
+    return base
+
+
 def to_npc_dict(doc: NpcDoc) -> dict:
     only = doc.branches[0] if len(doc.branches) == 1 else None
-    plain = only is not None and not only["if"] and not only["set"] and not only["choices"]
+    plain = only is not None and not only["if"] and not only["choices"] and not _has_ops(only)
     if plain:
         dialogue: list = list(only["lines"])
     else:
         dialogue = []
         for b in doc.branches:
-            entry = {"if": b["if"], "set": b["set"], "lines": b["lines"]}
+            entry = _entry_with_ops({"if": b["if"], "lines": b["lines"]}, b)
             if b["choices"]:
                 entry["choices"] = [
-                    {"label": c["label"], "set": c["set"], "lines": c["lines"]} for c in b["choices"]
+                    _entry_with_ops({"label": c["label"], "lines": c["lines"]}, c) for c in b["choices"]
                 ]
             dialogue.append(entry)
     return {

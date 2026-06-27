@@ -132,6 +132,23 @@ sprite: elder
 - **1つの `if=` 内で `a:1|b:2`** … いずれか満たす（**OR**）。例: `if=quest:started|quest:collected`
 - **複数の `set=`** … まとめて適用（選択肢 `?` の `set=` も同様）
 
+#### アイテムの授受・所持条件
+
+- `give=item_id` … そのアイテムを所持品に加える（会話・選択肢の効果）
+- `take=item_id` … 所持品から取り除く
+- `has=item_id` … そのアイテムを持っているとき表示（条件・複数指定でAND）
+- `nohas=item_id` … 持っていないとき表示
+
+```markdown
+## 会話 if=quest_herb:started set=quest_herb:collected give=herb
+- 薬草を摘んで袋に入れた。
+
+## 会話 has=herb take=herb set=quest:done
+- 薬草を渡した。ありがとう。
+```
+
+所持品（インベントリ）は実行中保持され、セーブにも含まれる。アイテムは `scenario/items/<id>.md` で定義する。
+
 変換後 JSON の `if` は「ANDの配列（各要素はORグループ）」、`set` は「`[flag,value]` の配列」:
 
 ```json
@@ -165,6 +182,20 @@ sprite: elder
 - 会話＝本文（送り）→ 選択（↑↓で選び ui_accept で決定）→ 選んだ応答（送り）→ 終了
 - 変換後 JSON では分岐に `choices: [{label, set, lines}]` が付く
 - 選んだ瞬間に、その選択肢の `set` が適用される
+
+## items/<id>.md（アイテム）
+
+```markdown
+---
+id: herb
+name: 薬草
+---
+
+## 説明
+東の森に生える、よく効く薬草。
+```
+
+会話の `give=`/`take=`/`has=`/`nohas=` から id で参照する。変換後 `data/items/<id>.json`。
 
 ## 今後の拡張（v1以降の候補）
 

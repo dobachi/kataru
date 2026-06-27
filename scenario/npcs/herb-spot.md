@@ -4,7 +4,7 @@ name: 薬草
 sprite: herb
 ---
 
-## 会話 if=quest_herb:started set=quest_herb:collected
+## 会話 if=quest_herb:started set=quest_herb:collected give=herb
 - 薬草が生えている。摘んで袋に入れた。
 
 ## 会話 if=quest_herb:collected
