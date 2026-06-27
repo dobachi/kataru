@@ -1,0 +1,35 @@
+{
+  "id": "swordsman",
+  "name": "旅の剣士",
+  "sprite": "swordsman",
+  "dialogue": [
+    {
+      "if": [
+        [
+          [
+            "joined_knight",
+            "yes"
+          ]
+        ]
+      ],
+      "lines": [
+        "共に行こう。よろしく頼む。"
+      ]
+    },
+    {
+      "if": [],
+      "lines": [
+        "私も旅の仲間に加えてくれ。……恩に着る！"
+      ],
+      "set": [
+        [
+          "joined_knight",
+          "yes"
+        ]
+      ],
+      "join": [
+        "knight"
+      ]
+    }
+  ]
+}

@@ -276,6 +276,13 @@
   ],
   "npcs": [
     {
+      "id": "swordsman",
+      "pos": [
+        10,
+        3
+      ]
+    },
+    {
       "id": "apothecary",
       "pos": [
         16,

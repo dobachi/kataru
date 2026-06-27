@@ -17,7 +17,8 @@ var _current_map_id := ""
 var _toast_label: Label
 var _inventory: Array = []        # 所持アイテムid（セーブ対象）
 var _inv_box: InventoryBox
-var _stats: Dictionary = {}       # プレイヤー能力 {hp,max_hp,atk}（セーブ対象）
+var _party: Array = []            # パーティ（各要素がキャラのstats）。先頭がリーダー
+var _stats: Dictionary = {}       # リーダーのstatsへの参照（戦闘・マップ表示に使用）
 var _battle: BattleScreen
 var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
 var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
@@ -65,7 +66,8 @@ func _ready() -> void:
 		_load()
 	else:
 		GameBoot.load_on_start = false
-		_stats = _new_character_stats(START_CHAR)
+		_party = [_new_character_stats(START_CHAR)]
+		_stats = _party[0]
 		_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
@@ -214,27 +216,33 @@ func _new_character_stats(id: String) -> Dictionary:
 	return CharacterLoader.make_stats(c)
 
 ## 次レベルに必要な経験値（キャラごとの曲線）: exp_base + (level-1)*exp_growth
-func _exp_to_next() -> int:
-	var base := int(_stats.get("exp_base", 10))
-	var growth := int(_stats.get("exp_growth", 10))
-	return base + (int(_stats.get("level", 1)) - 1) * growth
+func _exp_to_next_of(m: Dictionary) -> int:
+	return int(m.get("exp_base", 10)) + (int(m.get("level", 1)) - 1) * int(m.get("exp_growth", 10))
 
-## 経験値を加算し、必要量に達したらレベルアップ（キャラごとの上昇量で）。
+## 1キャラに経験値を加算。レベルアップした数を返す。
+func _gain_exp_member(m: Dictionary, amount: int) -> int:
+	m["exp"] = int(m.get("exp", 0)) + amount
+	var leveled := 0
+	while int(m.get("exp", 0)) >= _exp_to_next_of(m):
+		m["exp"] = int(m["exp"]) - _exp_to_next_of(m)
+		m["level"] = int(m.get("level", 1)) + 1
+		m["max_hp"] = int(m.get("max_hp", 1)) + int(m.get("hp_growth", 5))
+		m["atk"] = int(m.get("atk", 1)) + int(m.get("atk_growth", 1))
+		m["hp"] = int(m["max_hp"])
+		leveled += 1
+	return leveled
+
+## 経験値をパーティ全員に加算する。
 func _gain_exp(amount: int) -> void:
 	if amount <= 0:
 		_toast("敵をたおした")
 		return
-	_stats["exp"] = int(_stats.get("exp", 0)) + amount
-	var leveled := 0
-	while int(_stats.get("exp", 0)) >= _exp_to_next():
-		_stats["exp"] = int(_stats["exp"]) - _exp_to_next()
-		_stats["level"] = int(_stats.get("level", 1)) + 1
-		_stats["max_hp"] = int(_stats.get("max_hp", 1)) + int(_stats.get("hp_growth", 5))
-		_stats["atk"] = int(_stats.get("atk", 1)) + int(_stats.get("atk_growth", 1))
-		_stats["hp"] = int(_stats["max_hp"])
-		leveled += 1
-	if leveled > 0:
-		_toast("レベルアップ！ Lv%d になった" % int(_stats.get("level", 1)))
+	var leveled_names: Array = []
+	for m in _party:
+		if _gain_exp_member(m, amount) > 0:
+			leveled_names.append(str(m.get("name", "")))
+	if not leveled_names.is_empty():
+		_toast("レベルアップ！ %s" % ", ".join(PackedStringArray(leveled_names)))
 	else:
 		_toast("けいけんち %d を えた" % amount)
 
@@ -244,11 +252,13 @@ func _open_inventory() -> void:
 		var item := ItemLoader.load_item(str(id))
 		var desc := str(item.get("desc", ""))
 		entries.append("%s — %s" % [str(item.get("name", id)), desc] if desc != "" else str(item.get("name", id)))
-	var header := "Lv %d   HP %d/%d   ちから %d   けいけんち %d" % [
-		int(_stats.get("level", 1)), int(_stats.get("hp", 0)), int(_stats.get("max_hp", 0)),
-		int(_stats.get("atk", 0)), int(_stats.get("exp", 0)),
-	]
-	_inv_box.open(entries, header)
+	var lines: Array = []
+	for m in _party:
+		lines.append("%s  Lv%d  HP %d/%d  ちから %d  けいけんち %d" % [
+			str(m.get("name", "")), int(m.get("level", 1)), int(m.get("hp", 0)),
+			int(m.get("max_hp", 0)), int(m.get("atk", 0)), int(m.get("exp", 0)),
+		])
+	_inv_box.open(entries, "\n".join(PackedStringArray(lines)))
 	_player.input_locked = true
 
 ## 効果（set/give/take）をまとめて適用する。
@@ -262,6 +272,18 @@ func _apply_ops(d: Dictionary) -> void:
 		_inventory.erase(str(it))
 	if str(d.get("battle", "")) != "":
 		_pending_battle = str(d.get("battle"))
+	for cid in d.get("join", []):
+		_recruit(str(cid))
+
+## 仲間を加入させる（既にパーティにいれば何もしない）。
+func _recruit(cid: String) -> void:
+	for m in _party:
+		if str(m.get("char", "")) == cid:
+			return
+	var c := CharacterLoader.load_character(cid)
+	if not c.is_empty():
+		_party.append(CharacterLoader.make_stats(c))
+		_toast("%s が なかまに くわわった！" % str(c.get("name", cid)))
 
 ## 分岐の条件（フラグの AND/OR ＋ 所持アイテム has/nohas）を評価する。
 func _branch_match(b: Dictionary) -> bool:
@@ -312,7 +334,7 @@ func _save() -> void:
 		"cell": [_player.cell.x, _player.cell.y],
 		"flags": _flags,
 		"inventory": _inventory,
-		"stats": _stats,
+		"party": _party,
 	})
 	_toast("セーブしました" if ok else "セーブ失敗")
 
@@ -323,7 +345,10 @@ func _load() -> void:
 		return
 	_flags = s.get("flags", {})
 	_inventory = s.get("inventory", [])
-	_stats = s.get("stats", DEFAULT_STATS.duplicate())
+	_party = s.get("party", [])
+	if _party.is_empty():
+		_party = [s.get("stats", DEFAULT_STATS.duplicate())]   # 旧セーブ互換
+	_stats = _party[0]
 	var c: Array = s.get("cell", [1, 1])
 	_load_map(str(s.get("map", START_MAP)), Vector2i(int(c[0]), int(c[1])))
 	_toast("ロードしました")
