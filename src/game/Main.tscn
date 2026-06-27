@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/game/Main.gd" id="1_main"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Title" type="Label" parent="."]
+offset_left = 250.0
+offset_top = 150.0
+offset_right = 390.0
+offset_bottom = 210.0
+theme_override_font_sizes/font_size = 32
+text = "kataru"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="."]
+offset_left = 180.0
+offset_top = 200.0
+offset_right = 460.0
+offset_bottom = 230.0
+text = "markdown-driven 2D RPG (placeholder)"
+horizontal_alignment = 1
