@@ -1,6 +1,6 @@
 class_name InventoryBox
 extends CanvasLayer
-## 持ち物を一覧表示するウィンドウ。I キーで開閉する想定。
+## メニュー（なかま＝ステータス／もちもの）を見やすく表示するウィンドウ。I キーで開閉。
 
 var active := false
 var _title: Label
@@ -10,35 +10,47 @@ func _ready() -> void:
 	layer = 15
 	var panel := Panel.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -150
-	panel.offset_right = 150
-	panel.offset_top = -80
-	panel.offset_bottom = 80
+	panel.offset_left = -170
+	panel.offset_right = 170
+	panel.offset_top = -100
+	panel.offset_bottom = 100
 	add_child(panel)
 
 	_title = Label.new()
-	_title.text = "もちもの"
-	_title.add_theme_font_size_override("font_size", 14)
+	_title.text = "メニュー"
 	_title.modulate = Color(1.0, 0.92, 0.6)
-	_title.position = Vector2(12, 8)
+	_title.position = Vector2(14, 8)
 	panel.add_child(_title)
 
 	_body = Label.new()
-	_body.add_theme_font_size_override("font_size", 12)
-	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_body.offset_left = 12
+	_body.offset_left = 14
 	_body.offset_top = 30
-	_body.offset_right = -12
+	_body.offset_right = -14
 	_body.offset_bottom = -10
+	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(_body)
 
 	visible = false
 
-## entries: ["薬草 — 東の森に生える…", ...]、header: ステータス1行
-func open(entries: Array, header: String = "") -> void:
-	var items_text := "（なし）" if entries.is_empty() else "\n".join(PackedStringArray(entries))
-	_body.text = (header + "\n\n" + items_text) if header != "" else items_text
+## party: stats辞書の配列, items: {name,desc} の配列
+func open(party: Array, items: Array) -> void:
+	var lines: Array = ["◆ なかま"]
+	for m in party:
+		lines.append("  %s    Lv %d" % [str(m.get("name", "")), int(m.get("level", 1))])
+		lines.append("    HP %d/%d   MP %d/%d" % [
+			int(m.get("hp", 0)), int(m.get("max_hp", 0)), int(m.get("mp", 0)), int(m.get("max_mp", 0))])
+		lines.append("    ちから %d   まもり %d   けいけんち %d" % [
+			int(m.get("atk", 0)), int(m.get("def", 0)), int(m.get("exp", 0))])
+	lines.append("")
+	lines.append("◆ もちもの")
+	if items.is_empty():
+		lines.append("  （なし）")
+	else:
+		for it in items:
+			var desc := str(it.get("desc", ""))
+			lines.append(("  ・%s … %s" % [str(it.get("name", "")), desc]) if desc != "" else ("  ・%s" % str(it.get("name", ""))))
+	_body.text = "\n".join(PackedStringArray(lines))
 	active = true
 	visible = true
 

@@ -256,19 +256,10 @@ func _gain_exp(amount: int) -> void:
 		_toast("けいけんち %d を えた" % amount)
 
 func _open_inventory() -> void:
-	var entries: Array = []
+	var items: Array = []
 	for id in _inventory:
-		var item := ItemLoader.load_item(str(id))
-		var desc := str(item.get("desc", ""))
-		entries.append("%s — %s" % [str(item.get("name", id)), desc] if desc != "" else str(item.get("name", id)))
-	var lines: Array = []
-	for m in _party:
-		lines.append("%s  Lv%d  HP %d/%d  MP %d/%d  ちから %d  まもり %d" % [
-			str(m.get("name", "")), int(m.get("level", 1)), int(m.get("hp", 0)),
-			int(m.get("max_hp", 0)), int(m.get("mp", 0)), int(m.get("max_mp", 0)),
-			int(m.get("atk", 0)), int(m.get("def", 0)),
-		])
-	_inv_box.open(entries, "\n".join(PackedStringArray(lines)))
+		items.append(ItemLoader.load_item(str(id)))
+	_inv_box.open(_party, items)
 	_player.input_locked = true
 
 ## 効果（set/give/take）をまとめて適用する。
