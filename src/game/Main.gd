@@ -41,7 +41,12 @@ func _ready() -> void:
 	_toast_label.add_theme_font_size_override("font_size", 12)
 	ui.add_child(_toast_label)
 
-	_load_map(START_MAP)
+	if GameBoot.load_on_start and SaveManager.has_save():
+		GameBoot.load_on_start = false
+		_load()
+	else:
+		GameBoot.load_on_start = false
+		_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
 func _load_map(map_id: String, spawn := Vector2i(-1, -1)) -> void:
@@ -106,6 +111,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if event.keycode == KEY_F9:
 			_load()
+			return
+		if event.keycode == KEY_ESCAPE:
+			get_tree().change_scene_to_file("res://src/game/Title.tscn")
 			return
 	if not event.is_action_pressed("ui_accept"):
 		return

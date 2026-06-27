@@ -7,7 +7,7 @@ config_version=5
 
 config/name="kataru"
 config/description="Markdown-driven 2D RPG (Godot 4)"
-run/main_scene="res://src/game/Main.tscn"
+run/main_scene="res://src/game/Title.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
