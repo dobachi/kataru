@@ -1,13 +1,20 @@
 class_name DialogueBox
 extends CanvasLayer
-## 画面下部の会話ウィンドウ。start() で開始し、advance() で次の行へ。
-## 全行を読み終えると finished を発火する。
+## 画面下部の会話ウィンドウ。
+## 会話: lines を順に表示 → choices があれば選択 → 選んだ応答(lines) を表示 → 終了。
+## モード: "lines"（本文送り） / "choices"（選択） / "response"（選択後の応答送り）
 
 signal finished
+signal choice_selected(choice: Dictionary)
 
 var active := false
+var mode := "lines"
+
 var _lines: Array = []
+var _choices: Array = []
+var _resp: Array = []
 var _index := 0
+var _sel := 0
 var _name_label: Label
 var _body_label: Label
 
@@ -17,7 +24,7 @@ func _ready() -> void:
 	panel.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	panel.offset_left = 8
 	panel.offset_right = -8
-	panel.offset_top = -70
+	panel.offset_top = -76
 	panel.offset_bottom = -8
 	add_child(panel)
 
@@ -39,23 +46,79 @@ func _ready() -> void:
 
 	visible = false
 
-func start(speaker: String, lines: Array) -> void:
-	if lines.is_empty():
+func start(speaker: String, lines: Array, choices: Array = []) -> void:
+	if lines.is_empty() and choices.is_empty():
 		return
 	_lines = lines
+	_choices = choices
+	_resp = []
 	_index = 0
+	_sel = 0
 	_name_label.text = speaker
-	_body_label.text = str(_lines[0])
 	active = true
 	visible = true
+	if _lines.is_empty():
+		_enter_choices_or_finish()
+	else:
+		mode = "lines"
+		_body_label.text = str(_lines[0])
 
+## 本文/応答の送り（ui_accept）
 func advance() -> void:
 	if not active:
 		return
-	_index += 1
-	if _index >= _lines.size():
-		active = false
-		visible = false
-		finished.emit()
+	if mode == "lines":
+		_index += 1
+		if _index < _lines.size():
+			_body_label.text = str(_lines[_index])
+		else:
+			_enter_choices_or_finish()
+	elif mode == "response":
+		_index += 1
+		if _index < _resp.size():
+			_body_label.text = str(_resp[_index])
+		else:
+			_finish()
+
+## 選択カーソルの移動
+func move(dir: int) -> void:
+	if mode != "choices":
+		return
+	_sel = clampi(_sel + dir, 0, _choices.size() - 1)
+	_render_choices()
+
+## 選択の決定（ui_accept）
+func confirm() -> void:
+	if mode != "choices":
+		return
+	var choice: Dictionary = _choices[_sel]
+	choice_selected.emit(choice)
+	_resp = choice.get("lines", [])
+	_index = 0
+	if _resp.is_empty():
+		_finish()
 	else:
-		_body_label.text = str(_lines[_index])
+		mode = "response"
+		_body_label.text = str(_resp[0])
+
+func _enter_choices_or_finish() -> void:
+	if _choices.is_empty():
+		_finish()
+	else:
+		mode = "choices"
+		_sel = 0
+		_render_choices()
+
+func _render_choices() -> void:
+	var t := ""
+	for i in _choices.size():
+		t += ("▶ " if i == _sel else "   ") + str(_choices[i].get("label", ""))
+		if i < _choices.size() - 1:
+			t += "\n"
+	_body_label.text = t
+
+func _finish() -> void:
+	active = false
+	visible = false
+	mode = "lines"
+	finished.emit()

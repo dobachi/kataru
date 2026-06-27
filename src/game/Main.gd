@@ -24,6 +24,7 @@ func _ready() -> void:
 	_dialogue = DialogueBox.new()
 	add_child(_dialogue)
 	_dialogue.finished.connect(func() -> void: _player.input_locked = false)
+	_dialogue.choice_selected.connect(_on_choice_selected)
 
 	_cam = Camera2D.new()
 	_cam.zoom = Vector2(1.5, 1.5)
@@ -77,35 +78,49 @@ func _on_player_stepped(cell: Vector2i) -> void:
 			return
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed("ui_accept"):
-		return
 	if _dialogue.active:
-		_dialogue.advance()
+		if _dialogue.mode == "choices":
+			if event.is_action_pressed("ui_up"):
+				_dialogue.move(-1)
+			elif event.is_action_pressed("ui_down"):
+				_dialogue.move(1)
+			elif event.is_action_pressed("ui_accept"):
+				_dialogue.confirm()
+		elif event.is_action_pressed("ui_accept"):
+			_dialogue.advance()
+		return
+	if not event.is_action_pressed("ui_accept"):
 		return
 	var npc := _npc_at(_player.cell + _player.facing)
 	if npc == null:
 		return
 	var res := _resolve_dialogue(npc.data.get("dialogue", []))
 	var lines: Array = res.get("lines", [])
-	if lines.is_empty():
+	var choices: Array = res.get("choices", [])
+	if lines.is_empty() and choices.is_empty():
 		return
 	var effect = res.get("set", null)
 	if effect != null:
 		_flags[str(effect[0])] = str(effect[1])
 	_player.input_locked = true
-	_dialogue.start(str(npc.data.get("name", "")), lines)
+	_dialogue.start(str(npc.data.get("name", "")), lines, choices)
 
-## dialogue（文字列配列 or 分岐配列）と現在のフラグから、表示行と効果を決める。
+func _on_choice_selected(choice: Dictionary) -> void:
+	var effect = choice.get("set", null)
+	if effect != null:
+		_flags[str(effect[0])] = str(effect[1])
+
+## dialogue（文字列配列 or 分岐配列）と現在のフラグから、表示行・効果・選択肢を決める。
 func _resolve_dialogue(dialogue: Array) -> Dictionary:
 	if dialogue.is_empty():
-		return {"lines": [], "set": null}
+		return {"lines": [], "set": null, "choices": []}
 	if dialogue[0] is String:
-		return {"lines": dialogue, "set": null}            # 従来形式（無条件）
-	for b in dialogue:                                      # 分岐: 先頭から最初に一致したもの
+		return {"lines": dialogue, "set": null, "choices": []}   # 従来形式（無条件）
+	for b in dialogue:                                            # 分岐: 先頭から最初に一致
 		var cond = b.get("if", null)
 		if cond == null or _flags.get(str(cond[0]), "none") == str(cond[1]):
-			return {"lines": b.get("lines", []), "set": b.get("set", null)}
-	return {"lines": [], "set": null}
+			return {"lines": b.get("lines", []), "set": b.get("set", null), "choices": b.get("choices", [])}
+	return {"lines": [], "set": null, "choices": []}
 
 func _npc_at(cell: Vector2i) -> Npc:
 	for n in _npcs:
