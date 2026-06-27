@@ -14,10 +14,13 @@ kataru はライセンスを **層ごと** に分けて管理しています。
   - ファイル: `assets/fonts/DotGothic16-Regular.ttf`
   - ライセンス全文: `assets/fonts/DotGothic16-OFL.txt`
 
-### アート（タイル・キャラ・UI）
-- **自作の簡易ドット絵（CC0 相当 / 本プロジェクト作）** — `tools/genart.py` で生成
-  - `assets/tiles/overworld.png`、`assets/tiles/dungeon.png`、`assets/sprites/characters.png`
-  - 暫定プレースホルダ。将来 Kenney 等の外部CC0素材へ差し替え予定（差し替え時に出典を追記）
+### アート（タイル・キャラ）
+- **Kenney「Tiny Town」「Tiny Dungeon」**（Kenney.nl, **CC0 / Public Domain**）
+  - 元データ: `assets/vendor/tiny-town/`, `assets/vendor/tiny-dungeon/`（License.txt 同梱）
+  - 生成物: `assets/tiles/overworld.png`, `assets/tiles/dungeon.png`, `assets/sprites/characters.png`
+  - ビルド: `python3 tools/buildart.py`（vendor のタイルからアトラスを組み立て）
+- 旧・自作プレースホルダ生成器 `tools/genart.py` は参考として残置（現在は未使用）
+- `assets/vendor/` に未使用パックも種類別に保管（すべて Kenney CC0。詳細は同ディレクトリ参照）
 
 ### 音（BGM・SE）
 - （未導入。CC0/CC-BY を予定。導入時にここへ記載）
