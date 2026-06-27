@@ -53,9 +53,11 @@
 # シナリオ(markdown) -> データ(JSON) へ変換
 make build           # = python3 tools/kataru.py convert --all
 
-# ゲームを起動（矢印キー/WASDで移動）
-make run             # = godot --path .   ※ Godotエディタで project.godot を開いて F5 でも可
+# ゲームを起動
+make run             # = godot --path .   ※ Godotエディタで project.godot を開いて実行でも可
 ```
+
+操作: 矢印キー/WASD=移動、Enter/Space=会話・選択決定、↑↓=選択肢、**F5=セーブ / F9=ロード**。
 
 マップを編集したら `make build` で `data/` を再生成してから起動します。
 制作支援ツールの詳細は [tools/README.md](tools/README.md) を参照。

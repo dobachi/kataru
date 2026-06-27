@@ -12,6 +12,8 @@ var _npcs: Array = []            # Array[Npc]
 var _warps: Array = []           # [{ pos:[x,y], map:String, to:[x,y] }]
 var _cam: Camera2D
 var _flags: Dictionary = {}      # クエスト等の状態（マップ遷移をまたいで保持）
+var _current_map_id := ""
+var _toast_label: Label
 
 func _ready() -> void:
 	_map_root = Node2D.new()
@@ -31,6 +33,14 @@ func _ready() -> void:
 	_player.add_child(_cam)
 	_cam.make_current()
 
+	var ui := CanvasLayer.new()
+	ui.layer = 20
+	add_child(ui)
+	_toast_label = Label.new()
+	_toast_label.position = Vector2(8, 6)
+	_toast_label.add_theme_font_size_override("font_size", 12)
+	ui.add_child(_toast_label)
+
 	_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
@@ -38,6 +48,7 @@ func _load_map(map_id: String, spawn := Vector2i(-1, -1)) -> void:
 	var map := MapLoader.load_map_by_id(map_id)
 	if map == null:
 		return
+	_current_map_id = map_id
 
 	for child in _map_root.get_children():
 		child.queue_free()
@@ -89,6 +100,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("ui_accept"):
 			_dialogue.advance()
 		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F5:
+			_save()
+			return
+		if event.keycode == KEY_F9:
+			_load()
+			return
 	if not event.is_action_pressed("ui_accept"):
 		return
 	var npc := _npc_at(_player.cell + _player.facing)
@@ -143,3 +161,31 @@ func _npc_at(cell: Vector2i) -> Npc:
 		if n.cell == cell:
 			return n
 	return null
+
+func _save() -> void:
+	var ok := SaveManager.save_state({
+		"map": _current_map_id,
+		"cell": [_player.cell.x, _player.cell.y],
+		"flags": _flags,
+	})
+	_toast("セーブしました" if ok else "セーブ失敗")
+
+func _load() -> void:
+	var s := SaveManager.load_state()
+	if s.is_empty():
+		_toast("セーブデータがありません")
+		return
+	_flags = s.get("flags", {})
+	var c: Array = s.get("cell", [1, 1])
+	_load_map(str(s.get("map", START_MAP)), Vector2i(int(c[0]), int(c[1])))
+	_toast("ロードしました")
+
+func _toast(msg: String) -> void:
+	if _toast_label == null:
+		return
+	_toast_label.text = msg
+	var timer := get_tree().create_timer(1.5)
+	timer.timeout.connect(func() -> void:
+		if _toast_label != null and _toast_label.text == msg:
+			_toast_label.text = ""
+	)
