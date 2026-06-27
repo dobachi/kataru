@@ -13,7 +13,7 @@
 - ゲーム実行時はAIに依存せず動作する（再現性・配布性・コストの面で有利）
 - アジャイル／インクリメンタルに開発する
 
-詳細は [docs/concept.md](docs/concept.md) を参照。
+詳細は [docs/concept.md](docs/concept.md) を参照。制作支援ツールの計画は [docs/authoring-tools.md](docs/authoring-tools.md) に集約している。
 
 ## データフロー
 
