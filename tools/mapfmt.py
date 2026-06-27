@@ -105,6 +105,40 @@ def _is_overlay(ch: str) -> bool:
     return ch == "@" or (ch.isalpha() and (ch.isupper() or ch.islower()))
 
 
+def _under_symbol(grid: list[str], x: int, y: int, terrain: dict, default_sym: str) -> str:
+    """オーバーレイ(キャラ/移動口)マスの下に敷く地形記号を隣接から推定する。
+    優先: 左右が同じ地形/上下が同じ地形（＝道や帯を貫通）→ その地形。
+    次点: 4近傍の地形の多数派。無ければ default（キャラの下に地形を置けるように）。
+    """
+    def terr(nx: int, ny: int):
+        if 0 <= ny < len(grid) and 0 <= nx < len(grid[ny]):
+            c = grid[ny][nx]
+            if c in terrain and not _is_overlay(c):
+                return c
+        return None
+
+    left, right = terr(x - 1, y), terr(x + 1, y)
+    up, down = terr(x, y - 1), terr(x, y + 1)
+    # 通り抜け（左右が同地形／上下が同地形）の候補。道などを通すため default 以外を優先。
+    cands: list[str] = []
+    if left is not None and left == right:
+        cands.append(left)
+    if up is not None and up == down:
+        cands.append(up)
+    for c in cands:
+        if c != default_sym:
+            return c
+    if cands:
+        return cands[0]
+    counts: dict[str, int] = {}
+    for c in (left, right, up, down):
+        if c is not None:
+            counts[c] = counts.get(c, 0) + 1
+    if counts:
+        return max(counts, key=lambda k: counts[k])
+    return default_sym
+
+
 def lint(doc: MapDoc, tileset: dict | None) -> list[LintIssue]:
     issues: list[LintIssue] = []
     if not doc.id:
@@ -178,9 +212,9 @@ def to_map_dict(doc: MapDoc, tileset: dict) -> dict:
         trow: list[int] = []
         srow: list[bool] = []
         for x, ch in enumerate(row):
-            sym = ch
             if _is_overlay(ch):
-                sym = default_sym
+                # キャラ/移動口の下は近傍から地形を推定（既定固定をやめる）
+                sym = _under_symbol(g, x, y, terrain, default_sym)
                 if ch == "@":
                     player_start = [x, y]
                 elif ch.isupper():
@@ -191,13 +225,17 @@ def to_map_dict(doc: MapDoc, tileset: dict) -> dict:
                     conn = doc.connections.get(ch)
                     if conn:
                         warps.append({"pos": [x, y], "map": conn["map"], "to": [conn["x"], conn["y"]]})
-            tdef = terrain.get(sym, {"col": 0, "solid": False})
-            col = int(tdef.get("col", 0))
-            # 移動口マスは入口タイル(warp_col)で描く（通行は可のまま）
-            if ch.isalpha() and ch.islower() and int(tileset.get("warp_col", -1)) >= 0:
-                col = int(tileset["warp_col"])
-            trow.append(col)
-            srow.append(bool(tdef.get("solid", False)))
+                tdef = terrain.get(sym, {"col": 0, "solid": False})
+                col = int(tdef.get("col", 0))
+                # 移動口マスは入口タイル(warp_col)で描く
+                if ch.isalpha() and ch.islower() and int(tileset.get("warp_col", -1)) >= 0:
+                    col = int(tileset["warp_col"])
+                trow.append(col)
+                srow.append(False)            # オーバーレイ上は通行可（NPCはoccupiedで別途ブロック）
+            else:
+                tdef = terrain.get(ch, {"col": 0, "solid": False})
+                trow.append(int(tdef.get("col", 0)))
+                srow.append(bool(tdef.get("solid", False)))
         tiles.append(trow)
         solid.append(srow)
     return {

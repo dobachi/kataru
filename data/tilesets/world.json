@@ -1,0 +1,24 @@
+{
+  "id": "world",
+  "image": "overworld.png",
+  "default": ".",
+  "warp_col": 5,
+  "tiles": {
+    ".": {
+      "col": 0,
+      "solid": false
+    },
+    "^": {
+      "col": 1,
+      "solid": true
+    },
+    "\"": {
+      "col": 2,
+      "solid": true
+    },
+    "=": {
+      "col": 4,
+      "solid": false
+    }
+  }
+}

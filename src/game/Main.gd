@@ -3,7 +3,7 @@ extends Node2D
 ## 操作: 矢印/WASD で移動、Enter/Space(ui_accept) で会話。移動口を踏むと別マップへ。
 
 const TILE_SIZE := 16
-const START_MAP := "village"
+const START_MAP := "world"
 const START_CHAR := "hero"
 
 var _player: Player
