@@ -1,0 +1,37 @@
+{
+  "id": "herb-spot",
+  "name": "薬草",
+  "sprite": "herb",
+  "dialogue": [
+    {
+      "if": [
+        "quest_herb",
+        "started"
+      ],
+      "set": [
+        "quest_herb",
+        "collected"
+      ],
+      "lines": [
+        "薬草が生えている。摘んで袋に入れた。"
+      ]
+    },
+    {
+      "if": [
+        "quest_herb",
+        "collected"
+      ],
+      "set": null,
+      "lines": [
+        "もう薬草は採った。"
+      ]
+    },
+    {
+      "if": null,
+      "set": null,
+      "lines": [
+        "薬草が生えているが、今は用がなさそうだ。"
+      ]
+    }
+  ]
+}

@@ -83,7 +83,7 @@ tileset: overworld
 
 Godot 側は `MapLoader.load_map()` がこの JSON を読み `WorldMap` を構築する。
 
-## npcs/<id>.md（案・S3で確定）
+## npcs/<id>.md（v0.2：条件付き会話）
 
 ```markdown
 ---
@@ -96,6 +96,41 @@ sprite: elder
 - こんにちは、旅の人。
 - この村にようこそ。
 ```
+
+### 条件付き会話・フラグ
+
+見出しに `if=` / `set=` を付けると、状態（フラグ）で会話を出し分けできる。
+採取オブジェクト等も「NPC」として同じ仕組みで表現する。
+
+```markdown
+## 会話 if=quest_herb:done
+- 先日は助かったよ。
+
+## 会話 if=quest_herb:collected set=quest_herb:done
+- おお、採ってきてくれたか！
+
+## 会話 if=quest_herb:started
+- 薬草はまだかい？
+
+## 会話 set=quest_herb:started
+- 東の森で薬草を採ってきてくれないか？
+```
+
+- `if=フラグ:値` … そのフラグが指定値のとき表示（未設定は `none` 扱い）
+- `set=フラグ:値` … 表示した瞬間にそのフラグを設定する
+- 分岐は**先頭から最初に条件一致したもの**が選ばれる（具体的＝進んだ状態を上に書く）
+- 条件・効果が1つも無ければ、従来どおり単純な会話（後方互換）
+
+変換後 JSON の `dialogue` は、条件付きがあると分岐配列になる:
+
+```json
+"dialogue": [
+  { "if": ["quest_herb","done"], "set": null, "lines": ["先日は助かったよ。"] },
+  { "if": null, "set": ["quest_herb","started"], "lines": ["…採ってきてくれないか？"] }
+]
+```
+
+フラグはゲーム実行中に保持され（マップ遷移をまたぐ）、クエスト進行に使う。
 
 ## 今後の拡張（v1以降の候補）
 

@@ -192,6 +192,13 @@
   ],
   "npcs": [
     {
+      "id": "herb-spot",
+      "pos": [
+        10,
+        5
+      ]
+    },
+    {
       "id": "forest-dweller",
       "pos": [
         14,
