@@ -4,6 +4,7 @@ extends Node2D
 
 const TILE_SIZE := 16
 const START_MAP := "village"
+const START_CHAR := "hero"
 
 var _player: Player
 var _dialogue: DialogueBox
@@ -21,7 +22,10 @@ var _battle: BattleScreen
 var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
 var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
 
-const DEFAULT_STATS := {"hp": 20, "max_hp": 20, "atk": 5, "level": 1, "exp": 0}
+const DEFAULT_STATS := {
+	"name": "あなた", "level": 1, "exp": 0, "hp": 20, "max_hp": 20, "atk": 5,
+	"exp_base": 10, "exp_growth": 10, "hp_growth": 5, "atk_growth": 1,
+}
 
 func _ready() -> void:
 	_map_root = Node2D.new()
@@ -61,7 +65,7 @@ func _ready() -> void:
 		_load()
 	else:
 		GameBoot.load_on_start = false
-		_stats = DEFAULT_STATS.duplicate()
+		_stats = _new_character_stats(START_CHAR)
 		_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
@@ -202,18 +206,31 @@ func _on_battle_finished(result: Dictionary) -> void:
 	_talking_npc = null
 	_player.input_locked = false
 
-## 経験値を加算し、必要量に達したらレベルアップ（max_hp/atk 上昇・全回復）。
+## 開始キャラクターの実行用ステータスを作る（データが無ければ既定値）。
+func _new_character_stats(id: String) -> Dictionary:
+	var c := CharacterLoader.load_character(id)
+	if c.is_empty():
+		return DEFAULT_STATS.duplicate()
+	return CharacterLoader.make_stats(c)
+
+## 次レベルに必要な経験値（キャラごとの曲線）: exp_base + (level-1)*exp_growth
+func _exp_to_next() -> int:
+	var base := int(_stats.get("exp_base", 10))
+	var growth := int(_stats.get("exp_growth", 10))
+	return base + (int(_stats.get("level", 1)) - 1) * growth
+
+## 経験値を加算し、必要量に達したらレベルアップ（キャラごとの上昇量で）。
 func _gain_exp(amount: int) -> void:
 	if amount <= 0:
 		_toast("敵をたおした")
 		return
 	_stats["exp"] = int(_stats.get("exp", 0)) + amount
 	var leveled := 0
-	while int(_stats.get("exp", 0)) >= int(_stats.get("level", 1)) * 10:
-		_stats["exp"] = int(_stats["exp"]) - int(_stats.get("level", 1)) * 10
+	while int(_stats.get("exp", 0)) >= _exp_to_next():
+		_stats["exp"] = int(_stats["exp"]) - _exp_to_next()
 		_stats["level"] = int(_stats.get("level", 1)) + 1
-		_stats["max_hp"] = int(_stats.get("max_hp", 1)) + 5
-		_stats["atk"] = int(_stats.get("atk", 1)) + 1
+		_stats["max_hp"] = int(_stats.get("max_hp", 1)) + int(_stats.get("hp_growth", 5))
+		_stats["atk"] = int(_stats.get("atk", 1)) + int(_stats.get("atk_growth", 1))
 		_stats["hp"] = int(_stats["max_hp"])
 		leveled += 1
 	if leveled > 0:

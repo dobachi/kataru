@@ -222,8 +222,30 @@ exp: 5
 
 会話の `battle=` から id で参照する。変換後 `data/enemies/<id>.json`。
 戦闘はターン制（たたかう／にげる）。勝つと `exp` を得る。
-プレイヤー能力（level/exp/hp/max_hp/atk）はセーブに含まれ、経験値が貯まると
-レベルアップして max_hp・atk が上がる（「もちもの」画面でステータス確認可）。
+
+## characters/<id>.md（キャラクター）
+
+プレイヤーは「キャラクター」として定義する。レベルカーブ（必要経験値・上昇量）を
+**キャラごとに**設定できる。
+
+```markdown
+---
+id: hero
+name: 主人公
+hp: 20            # 初期最大HP
+atk: 5            # 初期ちから
+exp_base: 10      # Lv1→2 に必要な経験値
+exp_growth: 10    # レベルごとに必要経験値へ加える量
+hp_growth: 5      # レベルアップ時の最大HP上昇
+atk_growth: 1     # レベルアップ時のちから上昇
+---
+```
+
+- 次レベルに必要な経験値 = `exp_base + (level-1) * exp_growth`
+- 開始キャラは `Main.gd` の `START_CHAR`（現在 `hero`）
+- 実行中のステータス（level/exp/hp/max_hp/atk と曲線）はセーブに含まれる
+- ステータスは「もちもの」(I) で確認できる
+- 例: `knight` は HP が高く成長は遅い、という別曲線を持つ
 
 ## 今後の拡張（v1以降の候補）
 
