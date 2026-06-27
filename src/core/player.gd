@@ -3,7 +3,7 @@ extends Node2D
 ## グリッド単位で移動するプレイヤー。古風RPG風に、1マスずつ滑らかに歩く。
 ## 壁判定は WorldMap.is_walkable に委ねる。見た目はS1暫定の四角。
 
-const STEP_TIME := 0.12
+const STEP_TIME := 0.14  # 1マスの歩行時間。将来ダッシュ時は短縮する想定
 
 var map: WorldMap = null
 var tile_size: int = 32
