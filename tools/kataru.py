@@ -169,6 +169,68 @@ def cmd_preview(args) -> int:
     return 0
 
 
+def _collect_ids(directory: Path, fmt) -> set:
+    ids: set = set()
+    if not directory.exists():
+        return ids
+    for p in sorted(directory.glob("*.md")):
+        ids.add(fmt.parse(p.read_text(encoding="utf-8")).id)
+    return ids
+
+
+def cmd_xref(args) -> int:
+    """シナリオ間の参照（npc/item/enemy/character/map/tileset）の存在を検証する。"""
+    maps = _collect_ids(SCENARIO_MAPS, mapfmt)
+    npcs = _collect_ids(SCENARIO_NPCS, npcfmt)
+    items = _collect_ids(SCENARIO_ITEMS, itemfmt)
+    enemies = _collect_ids(SCENARIO_ENEMIES, enemyfmt)
+    chars = _collect_ids(SCENARIO_CHARS, charfmt)
+    tilesets = _collect_ids(SCENARIO_TILESETS, tilesetfmt)
+    errors: list[str] = []
+
+    def need(kind_set: set, ref: str, where: str, label: str):
+        if ref and ref not in kind_set:
+            errors.append(f"{where}: {label} '{ref}' が見つかりません")
+
+    # マップ: tileset / npc配置 / 接続先マップ
+    for p in sorted(SCENARIO_MAPS.glob("*.md")):
+        doc = mapfmt.parse(p.read_text(encoding="utf-8"))
+        w = f"maps/{p.name}"
+        need(tilesets, doc.tileset, w, "tileset")
+        for sym, npc_id in doc.placements.items():
+            need(npcs, npc_id, w, f"配置 {sym}: npc")
+        for sym, conn in doc.connections.items():
+            need(maps, conn["map"], w, f"接続 {sym}: map")
+
+    # NPC: give/take/has/nohas(item) / battle(enemy) / join(character)
+    for p in sorted(SCENARIO_NPCS.glob("*.md")):
+        doc = npcfmt.parse(p.read_text(encoding="utf-8"))
+        w = f"npcs/{p.name}"
+        for b in doc.branches:
+            sources = [b] + list(b.get("choices", []))
+            for src in sources:
+                for it in src.get("give", []) + src.get("take", []) + src.get("has", []) + src.get("nohas", []):
+                    need(items, it, w, "item")
+            if b.get("battle"):
+                need(enemies, b["battle"], w, "battle: enemy")
+            for cid in b.get("join", []):
+                need(chars, cid, w, "join: character")
+
+    # world.md: start_map
+    world = ROOT / "scenario" / "world.md"
+    if world.exists():
+        fm, _ = mapfmt._split_frontmatter(world.read_text(encoding="utf-8"))
+        need(maps, fm.get("start_map", ""), "world.md", "start_map")
+
+    if errors:
+        print("[xref] 参照エラー:")
+        for e in errors:
+            print(f"  ✗ {e}")
+        return 1
+    print("[xref] OK（参照切れなし）")
+    return 0
+
+
 def cmd_scaffold(args) -> int:
     md = scaffold.make_blank(args.id, args.name or args.id, args.width, args.height)
     if args.out:
@@ -195,6 +257,9 @@ def main() -> int:
     cp.add_argument("files", nargs="*")
     cp.add_argument("--all", action="store_true", help="scenario/maps/*.md すべて")
     cp.set_defaults(func=cmd_convert)
+
+    xp = sub.add_parser("xref", help="シナリオ間の参照切れを検証")
+    xp.set_defaults(func=cmd_xref)
 
     pp = sub.add_parser("preview", help="マップを PNG 化")
     pp.add_argument("file")

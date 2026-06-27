@@ -10,6 +10,7 @@ build:
 
 lint:
 	python3 tools/kataru.py lint --all
+	python3 tools/kataru.py xref
 
 run:
 	godot --path .
