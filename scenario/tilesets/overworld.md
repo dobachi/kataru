@@ -9,3 +9,6 @@ warp_col: 5
 
 - .: col=0
 - #: col=1 solid
+- ": col=2 solid
+- =: col=4
+- +: col=6 solid

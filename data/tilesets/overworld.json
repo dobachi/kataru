@@ -11,6 +11,18 @@
     "#": {
       "col": 1,
       "solid": true
+    },
+    "\"": {
+      "col": 2,
+      "solid": true
+    },
+    "=": {
+      "col": 4,
+      "solid": false
+    },
+    "+": {
+      "col": 6,
+      "solid": true
     }
   }
 }

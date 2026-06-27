@@ -45,9 +45,9 @@ def main() -> None:
     tt = _sheet("tiny-town")
     td = _sheet("tiny-dungeon")
 
-    # overworld: grass, stone(wall), tree, water(暫定でgrass), path, door
+    # overworld: 0grass 1stone 2tree 3water(暫定grass) 4path 5door 6fence
     _atlas(
-        [_tile(tt, 0), _tile(tt, 48), _tile(tt, 4), _tile(tt, 0), _tile(tt, 12), _tile(tt, 84)],
+        [_tile(tt, 0), _tile(tt, 48), _tile(tt, 4), _tile(tt, 0), _tile(tt, 25), _tile(tt, 84), _tile(tt, 44)],
         os.path.join(ROOT, "assets/tiles/overworld.png"),
     )
     # dungeon: floor, wall, stairs(=扉)

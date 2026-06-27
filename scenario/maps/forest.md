@@ -38,5 +38,5 @@ tileset: forest
 
 ## 接続
 
-- v: map=village x=17 y=8
+- v: map=village x=11 y=4
 - d: map=dungeon x=2 y=4
