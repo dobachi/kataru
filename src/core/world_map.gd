@@ -9,7 +9,8 @@ var width: int = 0
 var height: int = 0
 var tiles: Array = []                 # Array[Array[int]]（行優先）
 var player_start := Vector2i(1, 1)
-var npcs: Array = []                  # [{ "id": String, "pos": [x, y] }]（S3で使用）
+var npcs: Array = []                  # [{ "id": String, "pos": [x, y] }]
+var warps: Array = []                 # [{ "pos": [x,y], "map": String, "to": [x,y] }]
 
 func _init(rows: Array = []) -> void:
 	if not rows.is_empty():

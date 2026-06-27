@@ -3,6 +3,8 @@ extends Node2D
 ## グリッド単位で移動するプレイヤー。古風RPG風に、1マスずつ滑らかに歩く。
 ## 壁判定は WorldMap.is_walkable に、NPC等の占有は occupied に委ねる。
 
+signal stepped(cell: Vector2i)          # 1マス歩き終えたとき（移動口判定に使う）
+
 const STEP_TIME := 0.14  # 1マスの歩行時間。将来ダッシュ時は短縮する想定
 
 var map: WorldMap = null
@@ -47,7 +49,10 @@ func _try_move(dir: Vector2i) -> void:
 	cell = target
 	var tween := create_tween()
 	tween.tween_property(self, "position", _cell_to_pos(cell), STEP_TIME)
-	tween.finished.connect(func() -> void: _moving = false)
+	tween.finished.connect(func() -> void:
+		_moving = false
+		stepped.emit(cell)
+	)
 
 func _draw() -> void:
 	var s := tile_size * 0.7

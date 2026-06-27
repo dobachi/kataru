@@ -13,6 +13,7 @@ FLOOR_COLOR = (107, 158, 92)
 GRID_COLOR = (0, 0, 0)
 START_COLOR = (242, 217, 77)
 NPC_COLOR = (90, 150, 230)
+WARP_COLOR = (210, 140, 60)
 
 
 def render(doc: MapDoc, tile: int = 24) -> Image.Image:
@@ -33,4 +34,6 @@ def render(doc: MapDoc, tile: int = 24) -> Image.Image:
                 d.rectangle(inner, fill=START_COLOR)
             elif ch.isalpha() and ch.isupper():
                 d.ellipse(inner, fill=NPC_COLOR)
+            elif ch.isalpha() and ch.islower():
+                d.rectangle(inner, fill=WARP_COLOR)
     return img

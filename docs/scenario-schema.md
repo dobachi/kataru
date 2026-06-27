@@ -50,15 +50,20 @@ tileset: overworld
   | `.` | 床（通行可） | FLOOR(0) |
   | `@` | プレイヤー初期位置 | FLOOR(0) |
   | `A`〜`Z` | NPC配置点 | FLOOR(0) |
-- **配置**: `- N: npc=elder` の形で、配置記号 → NPC id を対応づける
+  | `a`〜`z` | 移動口（warp） | FLOOR(0) |
+- **配置**: `- N: npc=elder` の形で、配置記号(大文字) → NPC id を対応づける
+- **接続**: `- f: map=forest x=2 y=4` の形で、移動口(小文字) → 遷移先(マップid・到着座標)を対応づける
+  - プレイヤーが移動口のマスを踏むと、指定マップの (x,y) へ移動する
+  - 到着座標は「戻り口の隣」にすると往復ループを避けやすい
 
 ### lint（検証）が落とす条件
 
 - `id` が無い（error）/ `name` が無い（warning）
 - レイアウトが見つからない、矩形でない（error）
 - 未知の記号がある（error）
-- `@` が 0 個 / 2 個以上（error）
+- `@` が 2 個以上（error）/ 0 個（warning。開始マップ以外はwarpで入るので可）
 - 配置記号に対応する `npc=` が無い（error）/ 配置にあるがマップに無い（warning）
+- 移動口に対応する `接続` が無い（error）/ 接続にあるがマップに無い（warning）
 
 ## 変換後データ（data/maps/<id>.json）
 
@@ -71,7 +76,8 @@ tileset: overworld
   "height": 12,
   "player_start": [6, 4],
   "tiles": [[1,1,1, ...]],
-  "npcs": [{ "id": "elder", "pos": [8, 9] }]
+  "npcs": [{ "id": "elder", "pos": [8, 9] }],
+  "warps": [{ "pos": [18, 8], "map": "forest", "to": [2, 4] }]
 }
 ```
 
