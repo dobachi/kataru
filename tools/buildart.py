@@ -32,6 +32,13 @@ def _tile(sheet: Image.Image, idx: int) -> Image.Image:
     return sheet.crop((x, y, x + T, y + T))
 
 
+def _on(base: Image.Image, top: Image.Image) -> Image.Image:
+    """base の上に top を合成（透明背景のタイルに地面を焼き込む）。"""
+    b = base.copy()
+    b.alpha_composite(top)
+    return b
+
+
 def _atlas(tiles, out: str) -> None:
     sheet = Image.new("RGBA", (T * len(tiles), T), (0, 0, 0, 0))
     for i, t in enumerate(tiles):
@@ -45,14 +52,19 @@ def main() -> None:
     tt = _sheet("tiny-town")
     td = _sheet("tiny-dungeon")
 
+    grass = _tile(tt, 0)
+    floor = _tile(td, 48)
+
     # overworld: 0grass 1stone 2tree 3water(暫定grass) 4path 5door 6fence
+    # 透明背景のタイル（木/道/扉/柵）は草を下敷きにして不透明化する
     _atlas(
-        [_tile(tt, 0), _tile(tt, 48), _tile(tt, 4), _tile(tt, 0), _tile(tt, 25), _tile(tt, 84), _tile(tt, 44)],
+        [grass, _on(grass, _tile(tt, 48)), _on(grass, _tile(tt, 4)), grass,
+         _on(grass, _tile(tt, 25)), _on(grass, _tile(tt, 84)), _on(grass, _tile(tt, 44))],
         os.path.join(ROOT, "assets/tiles/overworld.png"),
     )
-    # dungeon: floor, wall, stairs(=扉)
+    # dungeon: floor, wall, stairs(=扉)。透明タイルは床を下敷きに
     _atlas(
-        [_tile(td, 48), _tile(td, 0), _tile(td, 32)],
+        [floor, _on(floor, _tile(td, 0)), _on(floor, _tile(td, 32))],
         os.path.join(ROOT, "assets/tiles/dungeon.png"),
     )
     # characters: hero, villager(elder), merchant, apothecary, swordsman, forest_dweller, herb, slime
