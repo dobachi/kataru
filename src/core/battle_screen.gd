@@ -14,6 +14,7 @@ var _patk := 0
 var _ehp := 0
 var _emax := 0
 var _eatk := 1
+var _eexp := 0
 var _ename := ""
 
 var _menu_items := ["たたかう", "にげる"]
@@ -64,6 +65,7 @@ func start(stats: Dictionary, enemy: Dictionary) -> void:
 	_ehp = int(enemy.get("hp", 1))
 	_emax = _ehp
 	_eatk = int(enemy.get("atk", 1))
+	_eexp = int(enemy.get("exp", 0))
 	_ename = str(enemy.get("name", "てき"))
 	_sel = 0
 	active = true
@@ -111,6 +113,8 @@ func _choose() -> void:
 	var msgs := ["%s に %d の ダメージ！" % [_ename, _patk]]
 	if _ehp <= 0:
 		msgs.append("%s を たおした！" % _ename)
+		if _eexp > 0:
+			msgs.append("けいけんち %d を えた！" % _eexp)
 		_show_messages(msgs, "win")
 	else:
 		_show_messages(msgs, "enemy")
@@ -148,4 +152,4 @@ func _finish(outcome: String) -> void:
 	active = false
 	visible = false
 	mode = "command"
-	finished.emit({"outcome": outcome, "player_hp": _php})
+	finished.emit({"outcome": outcome, "player_hp": _php, "exp": _eexp})

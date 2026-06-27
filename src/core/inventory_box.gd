@@ -35,9 +35,10 @@ func _ready() -> void:
 
 	visible = false
 
-## entries: ["薬草 — 東の森に生える…", ...]
-func open(entries: Array) -> void:
-	_body.text = "（なし）" if entries.is_empty() else "\n".join(PackedStringArray(entries))
+## entries: ["薬草 — 東の森に生える…", ...]、header: ステータス1行
+func open(entries: Array, header: String = "") -> void:
+	var items_text := "（なし）" if entries.is_empty() else "\n".join(PackedStringArray(entries))
+	_body.text = (header + "\n\n" + items_text) if header != "" else items_text
 	active = true
 	visible = true
 

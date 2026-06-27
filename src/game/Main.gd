@@ -21,7 +21,7 @@ var _battle: BattleScreen
 var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
 var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
 
-const DEFAULT_STATS := {"hp": 20, "max_hp": 20, "atk": 5}
+const DEFAULT_STATS := {"hp": 20, "max_hp": 20, "atk": 5, "level": 1, "exp": 0}
 
 func _ready() -> void:
 	_map_root = Node2D.new()
@@ -192,7 +192,7 @@ func _on_battle_finished(result: Dictionary) -> void:
 			_player.occupied.erase(_talking_npc.cell)
 			_npcs.erase(_talking_npc)
 			_talking_npc.queue_free()
-		_toast("敵をたおした")
+		_gain_exp(int(result.get("exp", 0)))
 	elif outcome == "lose":
 		_stats["hp"] = int(_stats.get("max_hp", 1))
 		_toast("気を失った……村で目を覚ました")
@@ -202,13 +202,36 @@ func _on_battle_finished(result: Dictionary) -> void:
 	_talking_npc = null
 	_player.input_locked = false
 
+## 経験値を加算し、必要量に達したらレベルアップ（max_hp/atk 上昇・全回復）。
+func _gain_exp(amount: int) -> void:
+	if amount <= 0:
+		_toast("敵をたおした")
+		return
+	_stats["exp"] = int(_stats.get("exp", 0)) + amount
+	var leveled := 0
+	while int(_stats.get("exp", 0)) >= int(_stats.get("level", 1)) * 10:
+		_stats["exp"] = int(_stats["exp"]) - int(_stats.get("level", 1)) * 10
+		_stats["level"] = int(_stats.get("level", 1)) + 1
+		_stats["max_hp"] = int(_stats.get("max_hp", 1)) + 5
+		_stats["atk"] = int(_stats.get("atk", 1)) + 1
+		_stats["hp"] = int(_stats["max_hp"])
+		leveled += 1
+	if leveled > 0:
+		_toast("レベルアップ！ Lv%d になった" % int(_stats.get("level", 1)))
+	else:
+		_toast("けいけんち %d を えた" % amount)
+
 func _open_inventory() -> void:
 	var entries: Array = []
 	for id in _inventory:
 		var item := ItemLoader.load_item(str(id))
 		var desc := str(item.get("desc", ""))
 		entries.append("%s — %s" % [str(item.get("name", id)), desc] if desc != "" else str(item.get("name", id)))
-	_inv_box.open(entries)
+	var header := "Lv %d   HP %d/%d   ちから %d   けいけんち %d" % [
+		int(_stats.get("level", 1)), int(_stats.get("hp", 0)), int(_stats.get("max_hp", 0)),
+		int(_stats.get("atk", 0)), int(_stats.get("exp", 0)),
+	]
+	_inv_box.open(entries, header)
 	_player.input_locked = true
 
 ## 効果（set/give/take）をまとめて適用する。

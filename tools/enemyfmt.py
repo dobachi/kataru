@@ -16,6 +16,7 @@ class EnemyDoc:
     name: str = ""
     hp: int = 1
     atk: int = 1
+    exp: int = 0
 
 
 def _to_int(v: str, default: int) -> int:
@@ -32,6 +33,7 @@ def parse(text: str) -> EnemyDoc:
         name=fm.get("name", ""),
         hp=_to_int(fm.get("hp", "1"), 1),
         atk=_to_int(fm.get("atk", "1"), 1),
+        exp=_to_int(fm.get("exp", "0"), 0),
     )
 
 
@@ -47,4 +49,4 @@ def lint(doc: EnemyDoc) -> list[LintIssue]:
 
 
 def to_enemy_dict(doc: EnemyDoc) -> dict:
-    return {"id": doc.id, "name": doc.name, "hp": doc.hp, "atk": doc.atk}
+    return {"id": doc.id, "name": doc.name, "hp": doc.hp, "atk": doc.atk, "exp": doc.exp}
