@@ -16,6 +16,12 @@ var _current_map_id := ""
 var _toast_label: Label
 var _inventory: Array = []        # 所持アイテムid（セーブ対象）
 var _inv_box: InventoryBox
+var _stats: Dictionary = {}       # プレイヤー能力 {hp,max_hp,atk}（セーブ対象）
+var _battle: BattleScreen
+var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
+var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利時に除去）
+
+const DEFAULT_STATS := {"hp": 20, "max_hp": 20, "atk": 5}
 
 func _ready() -> void:
 	_map_root = Node2D.new()
@@ -27,11 +33,15 @@ func _ready() -> void:
 
 	_dialogue = DialogueBox.new()
 	add_child(_dialogue)
-	_dialogue.finished.connect(func() -> void: _player.input_locked = false)
+	_dialogue.finished.connect(_on_dialogue_finished)
 	_dialogue.choice_selected.connect(_on_choice_selected)
 
 	_inv_box = InventoryBox.new()
 	add_child(_inv_box)
+
+	_battle = BattleScreen.new()
+	add_child(_battle)
+	_battle.finished.connect(_on_battle_finished)
 
 	_cam = Camera2D.new()
 	_cam.zoom = Vector2(1.5, 1.5)
@@ -51,6 +61,7 @@ func _ready() -> void:
 		_load()
 	else:
 		GameBoot.load_on_start = false
+		_stats = DEFAULT_STATS.duplicate()
 		_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
@@ -99,6 +110,17 @@ func _on_player_stepped(cell: Vector2i) -> void:
 			return
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _battle.active:
+		if _battle.mode == "command":
+			if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_up"):
+				_battle.move(-1)
+			elif event.is_action_pressed("ui_right") or event.is_action_pressed("ui_down"):
+				_battle.move(1)
+			elif event.is_action_pressed("ui_accept"):
+				_battle.confirm()
+		elif event.is_action_pressed("ui_accept"):
+			_battle.confirm()
+		return
 	if _dialogue.active:
 		if _dialogue.mode == "choices":
 			if event.is_action_pressed("ui_up"):
@@ -138,12 +160,47 @@ func _unhandled_input(event: InputEvent) -> void:
 	var choices: Array = res.get("choices", [])
 	if lines.is_empty() and choices.is_empty():
 		return
+	_talking_npc = npc
 	_apply_ops(res)
 	_player.input_locked = true
 	_dialogue.start(str(npc.data.get("name", "")), lines, choices)
 
 func _on_choice_selected(choice: Dictionary) -> void:
 	_apply_ops(choice)
+
+func _on_dialogue_finished() -> void:
+	if _pending_battle != "":
+		var id := _pending_battle
+		_pending_battle = ""
+		_start_battle(id)
+	else:
+		_player.input_locked = false
+
+func _start_battle(id: String) -> void:
+	var enemy := EnemyLoader.load_enemy(id)
+	if enemy.is_empty():
+		_player.input_locked = false
+		return
+	_player.input_locked = true
+	_battle.start(_stats, enemy)
+
+func _on_battle_finished(result: Dictionary) -> void:
+	_stats["hp"] = int(result.get("player_hp", _stats.get("hp", 1)))
+	var outcome := str(result.get("outcome", ""))
+	if outcome == "win":
+		if _talking_npc != null and is_instance_valid(_talking_npc):
+			_player.occupied.erase(_talking_npc.cell)
+			_npcs.erase(_talking_npc)
+			_talking_npc.queue_free()
+		_toast("敵をたおした")
+	elif outcome == "lose":
+		_stats["hp"] = int(_stats.get("max_hp", 1))
+		_toast("気を失った……村で目を覚ました")
+		_load_map(START_MAP)
+	else:
+		_toast("にげだした")
+	_talking_npc = null
+	_player.input_locked = false
 
 func _open_inventory() -> void:
 	var entries: Array = []
@@ -163,6 +220,8 @@ func _apply_ops(d: Dictionary) -> void:
 			_inventory.append(str(it))
 	for it in d.get("take", []):
 		_inventory.erase(str(it))
+	if str(d.get("battle", "")) != "":
+		_pending_battle = str(d.get("battle"))
 
 ## 分岐の条件（フラグの AND/OR ＋ 所持アイテム has/nohas）を評価する。
 func _branch_match(b: Dictionary) -> bool:
@@ -213,6 +272,7 @@ func _save() -> void:
 		"cell": [_player.cell.x, _player.cell.y],
 		"flags": _flags,
 		"inventory": _inventory,
+		"stats": _stats,
 	})
 	_toast("セーブしました" if ok else "セーブ失敗")
 
@@ -223,6 +283,7 @@ func _load() -> void:
 		return
 	_flags = s.get("flags", {})
 	_inventory = s.get("inventory", [])
+	_stats = s.get("stats", DEFAULT_STATS.duplicate())
 	var c: Array = s.get("cell", [1, 1])
 	_load_map(str(s.get("map", START_MAP)), Vector2i(int(c[0]), int(c[1])))
 	_toast("ロードしました")

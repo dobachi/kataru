@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import enemyfmt  # noqa: E402
 import itemfmt  # noqa: E402
 import mapfmt  # noqa: E402
 import npcfmt  # noqa: E402
@@ -26,9 +27,11 @@ ROOT = Path(__file__).resolve().parent.parent
 SCENARIO_MAPS = ROOT / "scenario" / "maps"
 SCENARIO_NPCS = ROOT / "scenario" / "npcs"
 SCENARIO_ITEMS = ROOT / "scenario" / "items"
+SCENARIO_ENEMIES = ROOT / "scenario" / "enemies"
 DATA_MAPS = ROOT / "data" / "maps"
 DATA_NPCS = ROOT / "data" / "npcs"
 DATA_ITEMS = ROOT / "data" / "items"
+DATA_ENEMIES = ROOT / "data" / "enemies"
 
 
 def _kind_of(path: Path) -> str:
@@ -36,16 +39,19 @@ def _kind_of(path: Path) -> str:
         return "npc"
     if "items" in path.parts:
         return "item"
+    if "enemies" in path.parts:
+        return "enemy"
     return "map"
 
 
 def _targets(args) -> list[tuple[Path, str]]:
-    """処理対象を (パス, 種別) で返す。種別は 'map' / 'npc' / 'item'。"""
+    """処理対象を (パス, 種別) で返す。種別は 'map' / 'npc' / 'item' / 'enemy'。"""
     if getattr(args, "all", False):
         return (
             [(p, "map") for p in sorted(SCENARIO_MAPS.glob("*.md"))]
             + [(p, "npc") for p in sorted(SCENARIO_NPCS.glob("*.md"))]
             + [(p, "item") for p in sorted(SCENARIO_ITEMS.glob("*.md"))]
+            + [(p, "enemy") for p in sorted(SCENARIO_ENEMIES.glob("*.md"))]
         )
     return [(Path(p), _kind_of(Path(p))) for p in args.files]
 
@@ -58,6 +64,9 @@ def _parse_and_lint(path: Path, kind: str):
     if kind == "item":
         doc = itemfmt.parse(text)
         return doc, itemfmt.lint(doc)
+    if kind == "enemy":
+        doc = enemyfmt.parse(text)
+        return doc, enemyfmt.lint(doc)
     doc = mapfmt.parse(text)
     return doc, mapfmt.lint(doc)
 
@@ -86,6 +95,7 @@ def cmd_convert(args) -> int:
     DATA_MAPS.mkdir(parents=True, exist_ok=True)
     DATA_NPCS.mkdir(parents=True, exist_ok=True)
     DATA_ITEMS.mkdir(parents=True, exist_ok=True)
+    DATA_ENEMIES.mkdir(parents=True, exist_ok=True)
     had_error = False
     for path, kind in targets:
         doc, issues = _parse_and_lint(path, kind)
@@ -102,6 +112,9 @@ def cmd_convert(args) -> int:
         elif kind == "item":
             data = itemfmt.to_item_dict(doc)
             out = DATA_ITEMS / f"{doc.id}.json"
+        elif kind == "enemy":
+            data = enemyfmt.to_enemy_dict(doc)
+            out = DATA_ENEMIES / f"{doc.id}.json"
         else:
             data = mapfmt.to_map_dict(doc)
             out = DATA_MAPS / f"{doc.id}.json"

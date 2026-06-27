@@ -1,0 +1,14 @@
+{
+  "id": "slime",
+  "name": "スライム",
+  "sprite": "slime",
+  "dialogue": [
+    {
+      "if": [],
+      "lines": [
+        "スライムが ぶつかってきた！"
+      ],
+      "battle": "slime"
+    }
+  ]
+}

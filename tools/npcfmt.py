@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 from mapfmt import LintIssue, _split_frontmatter
 
-_ATTR_TOKEN = re.compile(r"(?:if|set|give|take|has|nohas)=\S+")
+_ATTR_TOKEN = re.compile(r"(?:if|set|give|take|has|nohas|battle)=\S+")
 
 
 @dataclass
@@ -50,7 +50,7 @@ def _parse_attrs(rest: str) -> tuple[list, dict]:
     ops: { set:[[flag,value]], give:[id], take:[id], has:[id], nohas:[id] }
     """
     conds: list = []
-    ops: dict = {"set": [], "give": [], "take": [], "has": [], "nohas": []}
+    ops: dict = {"set": [], "give": [], "take": [], "has": [], "nohas": [], "battle": ""}
     for tok in rest.split():
         if tok.startswith("if="):
             group: list = []
@@ -77,6 +77,9 @@ def _parse_attrs(rest: str) -> tuple[list, dict]:
         elif tok.startswith("nohas="):
             if tok[6:]:
                 ops["nohas"].append(tok[6:])
+        elif tok.startswith("battle="):
+            if tok[7:]:
+                ops["battle"] = tok[7:]
     return conds, ops
 
 
@@ -117,7 +120,7 @@ def _parse_dialogue(body: str) -> list[dict]:
     return [b for b in branches if b["lines"] or b["choices"]]
 
 
-_OP_KEYS = ("set", "give", "take", "has", "nohas")
+_OP_KEYS = ("set", "give", "take", "has", "nohas", "battle")
 
 
 def lint(doc: NpcDoc) -> list[LintIssue]:

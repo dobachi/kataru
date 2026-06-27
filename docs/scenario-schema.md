@@ -149,6 +149,17 @@ sprite: elder
 
 所持品（インベントリ）は実行中保持され、セーブにも含まれる。アイテムは `scenario/items/<id>.md` で定義する。
 
+#### 戦闘の開始
+
+- `battle=enemy_id` … その会話を見終えると戦闘を開始する（敵は `scenario/enemies/<id>.md`）
+
+```markdown
+## 会話 battle=slime
+- スライムが ぶつかってきた！
+```
+
+勝つと、話しかけた相手（敵NPC）はマップから取り除かれる。敗北すると全回復して村で目覚める。
+
 変換後 JSON の `if` は「ANDの配列（各要素はORグループ）」、`set` は「`[flag,value]` の配列」:
 
 ```json
@@ -196,6 +207,20 @@ name: 薬草
 ```
 
 会話の `give=`/`take=`/`has=`/`nohas=` から id で参照する。変換後 `data/items/<id>.json`。
+
+## enemies/<id>.md（敵）
+
+```markdown
+---
+id: slime
+name: スライム
+hp: 8
+atk: 3
+---
+```
+
+会話の `battle=` から id で参照する。変換後 `data/enemies/<id>.json`。
+戦闘はターン制（たたかう／にげる）。プレイヤー能力（hp/max_hp/atk）はセーブに含まれる。
 
 ## 今後の拡張（v1以降の候補）
 
