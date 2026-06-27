@@ -29,6 +29,7 @@ static func load_map(path: String) -> WorldMap:
 	var map := WorldMap.new(rows)
 	map.id = str(data.get("id", ""))
 	map.map_name = str(data.get("name", ""))
+	map.tileset = str(data.get("tileset", "overworld"))
 	var ps: Array = data.get("player_start", [1, 1])
 	map.player_start = Vector2i(int(ps[0]), int(ps[1]))
 	map.npcs = data.get("npcs", [])

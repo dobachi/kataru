@@ -5,6 +5,7 @@ extends RefCounted
 
 var id: String = ""
 var map_name: String = ""
+var tileset: String = "overworld"
 var width: int = 0
 var height: int = 0
 var tiles: Array = []                 # Array[Array[int]]（行優先）
