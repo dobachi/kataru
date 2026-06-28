@@ -19,6 +19,7 @@ var _emax := 0
 var _eatk := 1
 var _edef := 0
 var _eexp := 0
+var _egold := 0
 var _ename := ""
 
 const REVEAL_CPS := 40.0
@@ -99,6 +100,7 @@ func start(stats: Dictionary, enemy: Dictionary) -> void:
 	_eatk = int(enemy.get("atk", 1))
 	_edef = int(enemy.get("def", 0))
 	_eexp = int(enemy.get("exp", 0))
+	_egold = int(enemy.get("gold", 0))
 	_ename = str(enemy.get("name", "てき"))
 	_sel = 0
 	active = true
@@ -152,6 +154,8 @@ func _choose() -> void:
 		msgs.append("%s を たおした！" % _ename)
 		if _eexp > 0:
 			msgs.append("けいけんち %d を えた！" % _eexp)
+		if _egold > 0:
+			msgs.append("%d G を手に入れた！" % _egold)
 		_show_messages(msgs, "win")
 	else:
 		_show_messages(msgs, "enemy")
@@ -195,4 +199,4 @@ func _finish(outcome: String) -> void:
 	active = false
 	visible = false
 	mode = "command"
-	finished.emit({"outcome": outcome, "player_hp": _php, "exp": _eexp})
+	finished.emit({"outcome": outcome, "player_hp": _php, "exp": _eexp, "gold": _egold})

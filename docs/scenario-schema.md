@@ -208,6 +208,25 @@ name: 薬草
 
 会話の `give=`/`take=`/`has=`/`nohas=` から id で参照する。変換後 `data/items/<id>.json`。
 
+アイテムの追加項目（任意）:
+- `heal_hp` / `heal_mp` … もちものから使うと回復する量（>0 なら使用可能）
+- `price` … 店での購入価格
+
+## shops/<id>.md（店）
+
+```markdown
+---
+id: general
+name: よろず屋
+---
+
+## 品揃え
+- potion
+```
+
+会話の効果 `shop=general` で店が開く（購入）。価格は各アイテムの `price`。
+所持金（ゴールド）はパーティ共有でセーブに含まれる。敵の `gold` を倒すと入手。
+
 ## enemies/<id>.md（敵）
 
 ```markdown

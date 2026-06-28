@@ -23,6 +23,7 @@ import itemfmt  # noqa: E402
 import mapfmt  # noqa: E402
 import npcfmt  # noqa: E402
 import scaffold  # noqa: E402
+import shopfmt  # noqa: E402
 import tilesetfmt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +33,14 @@ SCENARIO_ITEMS = ROOT / "scenario" / "items"
 SCENARIO_ENEMIES = ROOT / "scenario" / "enemies"
 SCENARIO_CHARS = ROOT / "scenario" / "characters"
 SCENARIO_TILESETS = ROOT / "scenario" / "tilesets"
+SCENARIO_SHOPS = ROOT / "scenario" / "shops"
 DATA_MAPS = ROOT / "data" / "maps"
 DATA_NPCS = ROOT / "data" / "npcs"
 DATA_ITEMS = ROOT / "data" / "items"
 DATA_ENEMIES = ROOT / "data" / "enemies"
 DATA_CHARS = ROOT / "data" / "characters"
 DATA_TILESETS = ROOT / "data" / "tilesets"
+DATA_SHOPS = ROOT / "data" / "shops"
 
 
 def _kind_of(path: Path) -> str:
@@ -51,6 +54,8 @@ def _kind_of(path: Path) -> str:
         return "character"
     if "tilesets" in path.parts:
         return "tileset"
+    if "shops" in path.parts:
+        return "shop"
     return "map"
 
 
@@ -64,6 +69,7 @@ def _targets(args) -> list[tuple[Path, str]]:
             + [(p, "item") for p in sorted(SCENARIO_ITEMS.glob("*.md"))]
             + [(p, "enemy") for p in sorted(SCENARIO_ENEMIES.glob("*.md"))]
             + [(p, "character") for p in sorted(SCENARIO_CHARS.glob("*.md"))]
+            + [(p, "shop") for p in sorted(SCENARIO_SHOPS.glob("*.md"))]
         )
     return [(Path(p), _kind_of(Path(p))) for p in args.files]
 
@@ -93,6 +99,9 @@ def _parse_and_lint(path: Path, kind: str):
     if kind == "tileset":
         doc = tilesetfmt.parse(text)
         return doc, tilesetfmt.lint(doc)
+    if kind == "shop":
+        doc = shopfmt.parse(text)
+        return doc, shopfmt.lint(doc)
     doc = mapfmt.parse(text)
     return doc, mapfmt.lint(doc, _tileset_for(doc))
 
@@ -124,6 +133,7 @@ def cmd_convert(args) -> int:
     DATA_ENEMIES.mkdir(parents=True, exist_ok=True)
     DATA_CHARS.mkdir(parents=True, exist_ok=True)
     DATA_TILESETS.mkdir(parents=True, exist_ok=True)
+    DATA_SHOPS.mkdir(parents=True, exist_ok=True)
     had_error = False
     for path, kind in targets:
         doc, issues = _parse_and_lint(path, kind)
@@ -149,6 +159,9 @@ def cmd_convert(args) -> int:
         elif kind == "tileset":
             data = tilesetfmt.to_tileset_dict(doc)
             out = DATA_TILESETS / f"{doc.id}.json"
+        elif kind == "shop":
+            data = shopfmt.to_shop_dict(doc)
+            out = DATA_SHOPS / f"{doc.id}.json"
         else:
             data = mapfmt.to_map_dict(doc, _tileset_for(doc))
             out = DATA_MAPS / f"{doc.id}.json"
@@ -186,6 +199,7 @@ def cmd_xref(args) -> int:
     enemies = _collect_ids(SCENARIO_ENEMIES, enemyfmt)
     chars = _collect_ids(SCENARIO_CHARS, charfmt)
     tilesets = _collect_ids(SCENARIO_TILESETS, tilesetfmt)
+    shops = _collect_ids(SCENARIO_SHOPS, shopfmt)
     errors: list[str] = []
 
     def need(kind_set: set, ref: str, where: str, label: str):
@@ -215,6 +229,14 @@ def cmd_xref(args) -> int:
                 need(enemies, b["battle"], w, "battle: enemy")
             for cid in b.get("join", []):
                 need(chars, cid, w, "join: character")
+            if b.get("shop"):
+                need(shops, b["shop"], w, "shop")
+
+    # ショップ: 品揃えアイテムの存在
+    for p in sorted(SCENARIO_SHOPS.glob("*.md")):
+        doc = shopfmt.parse(p.read_text(encoding="utf-8"))
+        for it in doc.items:
+            need(items, it, f"shops/{p.name}", "item")
 
     # world.md: start_map
     world = ROOT / "scenario" / "world.md"

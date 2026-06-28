@@ -21,8 +21,11 @@ var _party: Array = []            # パーティ（各要素がキャラのstats
 var _stats: Dictionary = {}       # リーダーのstatsへの参照（戦闘・マップ表示に使用）
 var _battle: BattleScreen
 var _pending_battle := ""         # 会話終了後に開始する戦闘の敵id
+var _pending_shop := ""           # 会話終了後に開くショップid
 var _pending_remove := false      # 会話終了後に相手NPCを除去する（加入時）
 var _talking_npc: Npc = null      # 直近に話しかけた相手（戦闘勝利・加入時に除去）
+var _gold := 0                    # 所持金（セーブ対象・パーティ共有）
+var _shop_box: ShopBox
 
 const DEFAULT_STATS := {
 	"name": "あなた", "level": 1, "exp": 0, "hp": 20, "max_hp": 20,
@@ -51,6 +54,10 @@ func _ready() -> void:
 	add_child(_battle)
 	_battle.finished.connect(_on_battle_finished)
 
+	_shop_box = ShopBox.new()
+	add_child(_shop_box)
+	_shop_box.buy_requested.connect(_on_shop_buy)
+
 	_cam = Camera2D.new()
 	_cam.zoom = Vector2(1.5, 1.5)
 	_player.add_child(_cam)
@@ -71,6 +78,7 @@ func _ready() -> void:
 		GameBoot.load_on_start = false
 		_party = [_new_character_stats(START_CHAR)]
 		_stats = _party[0]
+		_gold = 50
 		_load_map(START_MAP)
 
 ## マップを読み込んで現在マップを差し替える。spawn 指定があればそこに、無ければ player_start に立つ。
@@ -144,6 +152,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.is_action_pressed("ui_accept"):
 			_dialogue.advance()
 		return
+	if _shop_box.active:
+		if event.is_action_pressed("ui_up"):
+			_shop_box.move(-1)
+		elif event.is_action_pressed("ui_down"):
+			_shop_box.move(1)
+		elif event.is_action_pressed("ui_accept"):
+			_shop_box.confirm()
+		elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_I or event.keycode == KEY_ESCAPE):
+			_shop_box.close()
+			_player.input_locked = false
+		return
 	if _inv_box.active:
 		if event.is_action_pressed("ui_up"):
 			_inv_box.move(-1)
@@ -194,8 +213,33 @@ func _on_dialogue_finished() -> void:
 		var id := _pending_battle
 		_pending_battle = ""
 		_start_battle(id)
+	elif _pending_shop != "":
+		var sid := _pending_shop
+		_pending_shop = ""
+		_open_shop(sid)
 	else:
 		_player.input_locked = false
+
+func _open_shop(id: String) -> void:
+	var shop := ShopLoader.load_shop(id)
+	if shop.is_empty():
+		_player.input_locked = false
+		return
+	var items: Array = []
+	for iid in shop.get("items", []):
+		items.append(ItemLoader.load_item(str(iid)))
+	_player.input_locked = true
+	_shop_box.open(items, _gold)
+
+func _on_shop_buy(item: Dictionary) -> void:
+	var price := int(item.get("price", 0))
+	if _gold < price:
+		_toast("お金が足りない")
+		return
+	_gold -= price
+	_inventory.append(str(item.get("id", "")))
+	_toast("%s を買った（-%d G）" % [str(item.get("name", "")), price])
+	_shop_box.set_gold(_gold)
 
 func _start_battle(id: String) -> void:
 	var enemy := EnemyLoader.load_enemy(id)
@@ -210,6 +254,7 @@ func _on_battle_finished(result: Dictionary) -> void:
 	var outcome := str(result.get("outcome", ""))
 	if outcome == "win":
 		_remove_talking_npc()
+		_gold += int(result.get("gold", 0))
 		_gain_exp(int(result.get("exp", 0)))
 	elif outcome == "lose":
 		_stats["hp"] = int(_stats.get("max_hp", 1))
@@ -265,7 +310,7 @@ func _open_inventory() -> void:
 	var items: Array = []
 	for id in _inventory:
 		items.append(ItemLoader.load_item(str(id)))
-	_inv_box.open(_party, items)
+	_inv_box.open(_party, items, _gold)
 	_player.input_locked = true
 
 ## もちもので選択中のアイテムを使う（回復など）。効果が無ければ何もしない。
@@ -296,6 +341,8 @@ func _apply_ops(d: Dictionary) -> void:
 		_inventory.erase(str(it))
 	if str(d.get("battle", "")) != "":
 		_pending_battle = str(d.get("battle"))
+	if str(d.get("shop", "")) != "":
+		_pending_shop = str(d.get("shop"))
 	var joins: Array = d.get("join", [])
 	for cid in joins:
 		_recruit(str(cid))
@@ -377,6 +424,7 @@ func _save() -> void:
 		"flags": _flags,
 		"inventory": _inventory,
 		"party": _party,
+		"gold": _gold,
 	})
 	_toast("セーブしました" if ok else "セーブ失敗")
 
@@ -391,6 +439,7 @@ func _load() -> void:
 	if _party.is_empty():
 		_party = [s.get("stats", DEFAULT_STATS.duplicate())]   # 旧セーブ互換
 	_stats = _party[0]
+	_gold = int(s.get("gold", 0))
 	var c: Array = s.get("cell", [1, 1])
 	_load_map(str(s.get("map", START_MAP)), Vector2i(int(c[0]), int(c[1])))
 	_toast("ロードしました")

@@ -5,6 +5,7 @@ extends CanvasLayer
 var active := false
 var _party: Array = []
 var _items: Array = []
+var _gold := 0
 var _sel := 0
 var _item_line0 := 0
 var _title: Label
@@ -43,9 +44,10 @@ func _ready() -> void:
 
 	visible = false
 
-func open(party: Array, items: Array) -> void:
+func open(party: Array, items: Array, gold: int = 0) -> void:
 	_party = party
 	_items = items
+	_gold = gold
 	_sel = 0
 	_render()
 	active = true
@@ -63,7 +65,7 @@ func selected() -> Dictionary:
 	return _items[_sel] if _sel < _items.size() else {}
 
 func _render() -> void:
-	var lines: Array = ["◆ なかま"]
+	var lines: Array = ["所持金 %d G" % _gold, "", "◆ なかま"]
 	for m in _party:
 		lines.append("  %s    Lv %d" % [str(m.get("name", "")), int(m.get("level", 1))])
 		lines.append("    HP %d/%d   MP %d/%d" % [

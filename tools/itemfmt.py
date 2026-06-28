@@ -18,6 +18,7 @@ class ItemDoc:
     desc: str = ""
     heal_hp: int = 0
     heal_mp: int = 0
+    price: int = 0
 
 
 def _to_int(v, default: int) -> int:
@@ -35,6 +36,7 @@ def parse(text: str) -> ItemDoc:
         desc=_desc(body),
         heal_hp=_to_int(fm.get("heal_hp", "0"), 0),
         heal_mp=_to_int(fm.get("heal_mp", "0"), 0),
+        price=_to_int(fm.get("price", "0"), 0),
     )
 
 
@@ -63,5 +65,5 @@ def lint(doc: ItemDoc) -> list[LintIssue]:
 def to_item_dict(doc: ItemDoc) -> dict:
     return {
         "id": doc.id, "name": doc.name, "desc": doc.desc,
-        "heal_hp": doc.heal_hp, "heal_mp": doc.heal_mp,
+        "heal_hp": doc.heal_hp, "heal_mp": doc.heal_mp, "price": doc.price,
     }
