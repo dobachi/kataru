@@ -1,0 +1,35 @@
+{
+  "id": "chest1",
+  "name": "宝箱",
+  "sprite": "chest",
+  "dialogue": [
+    {
+      "if": [
+        [
+          [
+            "chest1",
+            "opened"
+          ]
+        ]
+      ],
+      "lines": [
+        "宝箱は空っぽだ。"
+      ]
+    },
+    {
+      "if": [],
+      "lines": [
+        "宝箱を開けた！　回復薬を手に入れた。"
+      ],
+      "set": [
+        [
+          "chest1",
+          "opened"
+        ]
+      ],
+      "give": [
+        "potion"
+      ]
+    }
+  ]
+}

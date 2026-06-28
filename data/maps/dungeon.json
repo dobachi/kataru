@@ -301,7 +301,15 @@
       true
     ]
   ],
-  "npcs": [],
+  "npcs": [
+    {
+      "id": "chest1",
+      "pos": [
+        6,
+        4
+      ]
+    }
+  ],
   "warps": [
     {
       "pos": [

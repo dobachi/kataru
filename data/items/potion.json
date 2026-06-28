@@ -1,0 +1,7 @@
+{
+  "id": "potion",
+  "name": "回復薬",
+  "desc": "飲むと HP が 20 回復する。",
+  "heal_hp": 20,
+  "heal_mp": 0
+}

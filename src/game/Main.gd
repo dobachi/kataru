@@ -146,9 +146,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _inv_box.active:
 		if event.is_action_pressed("ui_up"):
-			_inv_box.scroll(-1)
+			_inv_box.move(-1)
 		elif event.is_action_pressed("ui_down"):
-			_inv_box.scroll(1)
+			_inv_box.move(1)
+		elif event.is_action_pressed("ui_accept"):
+			_use_selected_item()
 		elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_I:
 			_inv_box.close()
 			_player.input_locked = false
@@ -265,6 +267,23 @@ func _open_inventory() -> void:
 		items.append(ItemLoader.load_item(str(id)))
 	_inv_box.open(_party, items)
 	_player.input_locked = true
+
+## もちもので選択中のアイテムを使う（回復など）。効果が無ければ何もしない。
+func _use_selected_item() -> void:
+	var it := _inv_box.selected()
+	if it.is_empty():
+		return
+	var hp := int(it.get("heal_hp", 0))
+	var mp := int(it.get("heal_mp", 0))
+	if hp <= 0 and mp <= 0:
+		_toast("%s は いま使えない" % str(it.get("name", "")))
+		return
+	var leader: Dictionary = _party[0]
+	leader["hp"] = min(int(leader.get("max_hp", 1)), int(leader.get("hp", 0)) + hp)
+	leader["mp"] = min(int(leader.get("max_mp", 0)), int(leader.get("mp", 0)) + mp)
+	_inventory.erase(str(it.get("id", "")))
+	_toast("%s を使った（HP+%d）" % [str(it.get("name", "")), hp])
+	_open_inventory()
 
 ## 効果（set/give/take）をまとめて適用する。
 func _apply_ops(d: Dictionary) -> void:

@@ -16,11 +16,26 @@ class ItemDoc:
     id: str = ""
     name: str = ""
     desc: str = ""
+    heal_hp: int = 0
+    heal_mp: int = 0
+
+
+def _to_int(v, default: int) -> int:
+    try:
+        return int(str(v).strip())
+    except ValueError:
+        return default
 
 
 def parse(text: str) -> ItemDoc:
     fm, body = _split_frontmatter(text)
-    return ItemDoc(id=fm.get("id", ""), name=fm.get("name", ""), desc=_desc(body))
+    return ItemDoc(
+        id=fm.get("id", ""),
+        name=fm.get("name", ""),
+        desc=_desc(body),
+        heal_hp=_to_int(fm.get("heal_hp", "0"), 0),
+        heal_mp=_to_int(fm.get("heal_mp", "0"), 0),
+    )
 
 
 def _desc(body: str) -> str:
@@ -46,4 +61,7 @@ def lint(doc: ItemDoc) -> list[LintIssue]:
 
 
 def to_item_dict(doc: ItemDoc) -> dict:
-    return {"id": doc.id, "name": doc.name, "desc": doc.desc}
+    return {
+        "id": doc.id, "name": doc.name, "desc": doc.desc,
+        "heal_hp": doc.heal_hp, "heal_mp": doc.heal_mp,
+    }

@@ -78,6 +78,7 @@ def main() -> None:
             _tile(td, 100),  # forest_dweller（戦士系）
             _tile(tt, 17),   # herb（草）
             _tile(td, 108),  # slime（緑スライム）
+            _tile(td, 130),  # chest（宝箱）
         ],
         os.path.join(ROOT, "assets/sprites/characters.png"),
     )

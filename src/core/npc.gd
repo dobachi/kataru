@@ -5,7 +5,7 @@ extends Node2D
 ## sprite名 → アトラス列（assets/sprites/characters.png）
 const SPRITE_COL := {
 	"elder": 1, "merchant": 2, "apothecary": 3,
-	"swordsman": 4, "forest-dweller": 5, "herb": 6, "slime": 7,
+	"swordsman": 4, "forest-dweller": 5, "herb": 6, "slime": 7, "chest": 8,
 }
 
 var cell := Vector2i.ZERO
